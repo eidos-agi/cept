@@ -148,6 +148,83 @@ OPENROUTER_API_KEY=sk-or-... cept-cli --goal "..." --model "anthropic/claude-son
 - **Bounded.** Hard caps on transcript size, lookback, event count.
 - **Selective.** Cept is an escalation tool, not a default tool.
 
+## Live progress (`--emit`) and the floating HUD
+
+cept emits structured progress events at every phase boundary. Adapters consume them; you choose what surface you want.
+
+```bash
+# default: text events on stderr (stdout stays clean for the JSON result)
+cept-cli --goal "..." --dry-run
+
+# JSONL on stderr (machine-readable)
+cept-cli --goal "..." --emit jsonl:stderr
+
+# append to a log file
+cept-cli --goal "..." --emit file:~/.cept/status.jsonl
+
+# floating HUD panel (see below)
+cept-cli --goal "..." --emit hud
+
+# multiple at once: HUD + log
+cept-cli --goal "..." --emit hud --emit file:~/.cept/status.jsonl
+
+# silent
+cept-cli --goal "..." --quiet
+```
+
+For the MCP server (where stdout is the JSON-RPC channel and must stay clean), set `CEPT_EMIT` in the server's env:
+
+```jsonc
+"env": {
+  "OPENROUTER_API_KEY": "sk-or-...",
+  "CEPT_EMIT": "hud,file:~/.cept/status.jsonl"
+}
+```
+
+### Adapter spec syntax
+
+| Spec | What |
+|------|------|
+| `stdout` / `stderr` | Human-readable text |
+| `jsonl:-` / `jsonl:stderr` | JSONL to stdout/stderr |
+| `jsonl:PATH` / `file:PATH` | Append JSONL to file |
+| `socket:PATH` | JSONL to a Unix domain socket (no-op if no listener) |
+| `subprocess:CMD` | Spawn CMD, write JSONL to its stdin |
+| `hud` | Spawn the bundled Swift HUD (`$CEPT_HUD_CMD` or `cept-hud --once` in `$PATH`) |
+| `notify` | macOS notification banners (skips noisy phases) |
+| `noop` | Drop everything |
+
+### Event schema (the stable contract)
+
+```json
+{
+  "run_id": "abc123",
+  "seq": 7,
+  "ts": "2026-04-27T20:00:00.000Z",
+  "phase": "asking_model",
+  "level": "info",
+  "msg": "asking perplexity/sonar-reasoning",
+  "data": {"model": "perplexity/sonar-reasoning"}
+}
+```
+
+Anyone can write a different consumer (dashboard, Slack bridge, log forwarder) by reading JSONL with this schema.
+
+### Building the Swift HUD
+
+The HUD lives in `hud/` as a self-contained SwiftPM package (Swift 5, macOS 13+). It's a translucent floating panel that auto-fades on EOF.
+
+```bash
+cd hud
+swift build -c release
+# Either symlink onto $PATH:
+ln -sf "$PWD/.build/release/cept-hud" /usr/local/bin/cept-hud
+# Or point cept at it via env:
+export CEPT_HUD_CMD="$PWD/.build/release/cept-hud --once"
+```
+
+Then `--emit hud` (or `CEPT_EMIT=hud` for the MCP server) spawns it for the duration of each cept call. No Dock icon, click-through, top-right of the active screen.
+
 ## Layers
 
 ```
@@ -159,6 +236,12 @@ OPENROUTER_API_KEY=sk-or-... cept-cli --goal "..." --model "anthropic/claude-son
 │ Layer 1 — local introspection           │
 │  locator → distiller → redactor → packet│
 └─────────────────────────────────────────┘
+                  │
+                  ▼ (events fan out)
+┌─────────────────────────────────────────┐
+│ Adapters — stdout / file / socket /     │
+│ HUD / notify / noop                     │
+└─────────────────────────────────────────┘
 ```
 
-Layer 1 is independently useful and testable. Layer 2 is the consultation.
+Layer 1 is independently useful and testable. Layer 2 is the consultation. Adapters are the surface — swap them without touching the pipeline.

@@ -13,3 +13,6 @@ build/
 ceptkey
 .DS_Store
 .coverage
+hud/.build/
+hud/.swiftpm/
+hud/Package.resolved
