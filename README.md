@@ -2,7 +2,7 @@
 
 > Short for *proprioception*. Cept is the agent's mirror.
 
-Coding agents loop. They polish corners while the center is wrong. They retry the same fix three times instead of asking what they're missing. cept is a meta-tool that gives an agent a structured way to step back, look at its own recent trajectory, and request outside-in steering — backed by Perplexity's web-scale search.
+Coding agents loop. They polish corners while the center is wrong. They retry the same fix three times instead of asking what they're missing. cept is a meta-tool that gives an agent a structured way to step back, look at its own recent trajectory, and request outside-in steering — through OpenRouter, defaulting to a model with web search baked in.
 
 ## What it does
 
@@ -13,7 +13,7 @@ When invoked (explicitly via "use cept" or by an agent that has reached a decisi
 3. **Distill** raw events into a steering packet — decisions, attempts, errors, files touched, loops.
 4. **Collect** repo state — branch, dirty files, diff stat.
 5. **Redact** API keys, bearer tokens, env values, PEM blocks, emails, home paths.
-6. **Ask** Perplexity (`sonar-reasoning` by default) for ranked guidance with a mode-specific prompt.
+6. **Ask** an OpenRouter model (default `perplexity/sonar-reasoning` — reasoning + live web search) with a mode-specific prompt.
 7. **Return** a structured response: hypotheses, recommended next step, facts to verify, confidence.
 
 ## Modes
@@ -32,6 +32,19 @@ cd cept
 uv sync
 ```
 
+## Model selection (via OpenRouter)
+
+cept uses [OpenRouter](https://openrouter.ai) as the gateway, so you can swap models without changing the client.
+
+| Model id | Why |
+|----------|-----|
+| `perplexity/sonar-reasoning` *(default)* | Reasoning + live web search. Best for `steer`/`debug`. |
+| `perplexity/sonar-pro` | Fast web search, no reasoning trace. |
+| `anthropic/claude-sonnet-4-5:online` | Claude with web search via OpenRouter (`:online` suffix). |
+| `openai/gpt-5:online` | GPT with web search. |
+
+Append `:online` to any compatible model name to force web search.
+
 ## MCP server
 
 Register with Claude Code:
@@ -44,29 +57,36 @@ Register with Claude Code:
       "command": "uv",
       "args": ["run", "--directory", "/absolute/path/to/cept", "cept"],
       "env": {
-        "PERPLEXITY_API_KEY": "pplx-..."
+        "OPENROUTER_API_KEY": "sk-or-...",
+        "OPENROUTER_TITLE": "cept",
+        "OPENROUTER_REFERER": "https://github.com/eidos-agi/cept"
       }
     }
   }
 }
 ```
 
+The `OPENROUTER_TITLE` and `OPENROUTER_REFERER` env vars are optional — they show up on OpenRouter's app rankings.
+
 Then in a Claude Code session: "use cept — I'm stuck on the OAuth callback."
 
 ## CLI (dry-run / debugging)
 
 ```bash
-# Distill the current session and print the redacted packet without calling Perplexity:
+# Distill the current session and print the redacted packet without calling OpenRouter:
 cept-cli --goal "fix oauth callback" --dry-run
 
 # Send for real:
-PERPLEXITY_API_KEY=pplx-... cept-cli --goal "fix oauth callback" --mode debug
+OPENROUTER_API_KEY=sk-or-... cept-cli --goal "fix oauth callback" --mode debug
+
+# Try a different model:
+OPENROUTER_API_KEY=sk-or-... cept-cli --goal "..." --model "anthropic/claude-sonnet-4-5:online"
 ```
 
 ## Design rules
 
 - **Redact before send.** Local secrets must never leave the machine.
-- **Compress aggressively.** Perplexity gets signal, not raw logs.
+- **Compress aggressively.** The model gets signal, not raw logs.
 - **Structured output.** The agent consumes JSON fields, not prose.
 - **Bounded.** Hard caps on transcript size, lookback, event count.
 - **Selective.** Cept is an escalation tool, not a default tool.
@@ -75,7 +95,7 @@ PERPLEXITY_API_KEY=pplx-... cept-cli --goal "fix oauth callback" --mode debug
 
 ```
 ┌─────────────────────────────────────────┐
-│ Layer 2 — external steering (Perplexity)│
+│ Layer 2 — external steering (OpenRouter)│
 └─────────────────────────────────────────┘
                   ▲
 ┌─────────────────────────────────────────┐

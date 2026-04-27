@@ -8,7 +8,7 @@ import os
 from mcp.server.fastmcp import FastMCP
 
 from .core import run_cept
-from .perplexity import DEFAULT_MODEL, PerplexityError
+from .openrouter import DEFAULT_MODEL, OpenRouterError
 
 
 mcp = FastMCP("cept")
@@ -30,18 +30,21 @@ def cept(
 
     Use this when stuck, looping, or facing a low-confidence architectural choice.
     The tool reads the active session JSONL, distills the last `lookback_minutes`
-    of events, redacts secrets, and asks Perplexity for ranked guidance.
+    of events, redacts secrets, and asks an OpenRouter model (with web search)
+    for ranked guidance.
 
     Args:
         goal: What the agent is currently trying to accomplish.
         lookback_minutes: How far back to inspect (1–120, default 20).
         mode: One of "steer" (default), "debug", "research", "architecture".
-        question: Optional specific question to put to Perplexity.
+        question: Optional specific question to forward.
         session_id: Optional explicit Claude Code session UUID.
         include_repo_state: Whether to attach git status/diff/branch.
         include_diff: Whether to include `git diff --stat`.
         max_events: Cap on events to keep after the lookback filter.
-        model: Perplexity model name (default sonar-reasoning).
+        model: OpenRouter model id. Default "perplexity/sonar-reasoning"
+            (Perplexity's reasoning + web search). Append ":online" to any
+            model name to force web search where supported.
     """
     cwd = os.getcwd()
     lookback_minutes = max(1, min(int(lookback_minutes), 120))
@@ -64,8 +67,8 @@ def cept(
         )
     except FileNotFoundError as e:
         return _err(f"Session JSONL not found: {e}")
-    except PerplexityError as e:
-        return _err(f"Perplexity call failed: {e}")
+    except OpenRouterError as e:
+        return _err(f"OpenRouter call failed: {e}")
     except Exception as e:  # last-resort guard so MCP host gets a clean string
         return _err(f"Unexpected error: {e}")
 

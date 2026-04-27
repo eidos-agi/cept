@@ -8,13 +8,13 @@ import os
 import sys
 
 from .core import run_cept
-from .perplexity import DEFAULT_MODEL, PerplexityError
+from .openrouter import DEFAULT_MODEL, OpenRouterError
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="cept-cli",
-        description="Distill recent Claude Code session and (optionally) ask Perplexity for steering.",
+        description="Distill recent Claude Code session and (optionally) ask OpenRouter for steering.",
     )
     parser.add_argument("--goal", required=True, help="What the agent is trying to accomplish.")
     parser.add_argument("--cwd", default=None, help="Working directory (default: current).")
@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--question", default=None)
     parser.add_argument("--no-repo-state", action="store_true")
     parser.add_argument("--no-diff", action="store_true")
-    parser.add_argument("--dry-run", action="store_true", help="Print packet, skip Perplexity call.")
+    parser.add_argument("--dry-run", action="store_true", help="Print packet, skip OpenRouter call.")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     args = parser.parse_args(argv)
 
@@ -50,8 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
-    except PerplexityError as e:
-        print(f"perplexity error: {e}", file=sys.stderr)
+    except OpenRouterError as e:
+        print(f"openrouter error: {e}", file=sys.stderr)
         return 3
 
     json.dump(result, sys.stdout, indent=2, default=str)

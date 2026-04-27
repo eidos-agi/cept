@@ -1,4 +1,4 @@
-"""End-to-end pipeline: locate → distill → repo state → packet → (optional) Perplexity."""
+"""End-to-end pipeline: locate → distill → repo state → packet → (optional) OpenRouter."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from . import distiller, locator, packet, perplexity, repo_state
+from . import distiller, locator, openrouter, packet, repo_state
 
 
 def run_cept(
@@ -22,7 +22,7 @@ def run_cept(
     question: str | None = None,
     dry_run: bool = False,
     api_key: str | None = None,
-    model: str = perplexity.DEFAULT_MODEL,
+    model: str = openrouter.DEFAULT_MODEL,
 ) -> dict[str, Any]:
     cwd = str(cwd or os.getcwd())
 
@@ -62,6 +62,6 @@ def run_cept(
         result["guidance"] = None
         return result
 
-    guidance = perplexity.ask(pkt, api_key=api_key, model=model)
+    guidance = openrouter.ask(pkt, api_key=api_key, model=model)
     result["guidance"] = guidance
     return result

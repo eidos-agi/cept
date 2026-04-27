@@ -1,4 +1,14 @@
-"""Perplexity client — sends the redacted steering packet, returns structured guidance."""
+"""OpenRouter client — sends the redacted steering packet, returns structured guidance.
+
+OpenRouter exposes an OpenAI-compatible chat-completions endpoint that routes to
+many backends, so cept can pick a model with web search built in (Perplexity's
+sonar family) without locking the user to a single provider. Default is
+``perplexity/sonar-reasoning`` — same outside-in flavor that justified cept's
+design, just routed through OpenRouter.
+
+Append ``:online`` to any model name to force web search on backends that
+support it (e.g. ``anthropic/claude-sonnet-4-5:online``).
+"""
 
 from __future__ import annotations
 
@@ -9,8 +19,8 @@ from typing import Any
 import httpx
 
 
-PPLX_URL = "https://api.perplexity.ai/chat/completions"
-DEFAULT_MODEL = "sonar-reasoning"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+DEFAULT_MODEL = "perplexity/sonar-reasoning"
 
 
 SYSTEM_PROMPTS = {
@@ -72,7 +82,7 @@ RESPONSE_SCHEMA: dict[str, Any] = {
 }
 
 
-class PerplexityError(RuntimeError):
+class OpenRouterError(RuntimeError):
     pass
 
 
@@ -82,10 +92,12 @@ def ask(
     api_key: str | None = None,
     model: str = DEFAULT_MODEL,
     timeout: float = 60.0,
+    referer: str | None = None,
+    title: str | None = None,
 ) -> dict[str, Any]:
-    api_key = api_key or os.environ.get("PERPLEXITY_API_KEY")
+    api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        raise PerplexityError("PERPLEXITY_API_KEY not set.")
+        raise OpenRouterError("OPENROUTER_API_KEY not set.")
 
     mode = packet.get("meta", {}).get("mode", "steer")
     system = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["steer"])
@@ -96,7 +108,7 @@ def ask(
         f"```json\n{json.dumps(packet, indent=2)}\n```"
     )
 
-    body = {
+    body: dict[str, Any] = {
         "model": model,
         "messages": [
             {"role": "system", "content": system},
@@ -104,7 +116,11 @@ def ask(
         ],
         "response_format": {
             "type": "json_schema",
-            "json_schema": {"schema": RESPONSE_SCHEMA},
+            "json_schema": {
+                "name": "cept_guidance",
+                "strict": True,
+                "schema": RESPONSE_SCHEMA,
+            },
         },
     }
 
@@ -112,30 +128,39 @@ def ask(
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
+    # Optional OpenRouter ranking headers — recommended but not required.
+    if referer or os.environ.get("OPENROUTER_REFERER"):
+        headers["HTTP-Referer"] = referer or os.environ["OPENROUTER_REFERER"]
+    if title or os.environ.get("OPENROUTER_TITLE"):
+        headers["X-Title"] = title or os.environ.get("OPENROUTER_TITLE", "cept")
 
     try:
         with httpx.Client(timeout=timeout) as client:
-            resp = client.post(PPLX_URL, headers=headers, json=body)
+            resp = client.post(OPENROUTER_URL, headers=headers, json=body)
     except httpx.HTTPError as e:
-        raise PerplexityError(f"Perplexity request failed: {e}") from e
+        raise OpenRouterError(f"OpenRouter request failed: {e}") from e
 
     if resp.status_code >= 400:
-        raise PerplexityError(f"Perplexity {resp.status_code}: {resp.text[:500]}")
+        raise OpenRouterError(f"OpenRouter {resp.status_code}: {resp.text[:500]}")
 
     data = resp.json()
     try:
-        content = data["choices"][0]["message"]["content"]
+        message = data["choices"][0]["message"]
+        content = message.get("content", "")
     except (KeyError, IndexError, TypeError) as e:
-        raise PerplexityError(f"Unexpected Perplexity response shape: {data}") from e
+        raise OpenRouterError(f"Unexpected OpenRouter response shape: {data}") from e
 
-    citations = data.get("citations") or []
+    citations = data.get("citations") or message.get("citations") or []
 
     parsed = _parse_json_content(content)
     parsed.setdefault("citations", citations)
+    parsed.setdefault("_model", model)
     return parsed
 
 
-def _parse_json_content(content: str) -> dict[str, Any]:
+def _parse_json_content(content: Any) -> dict[str, Any]:
+    if not isinstance(content, str):
+        return {"summary": str(content), "raw": True}
     try:
         return json.loads(content)
     except json.JSONDecodeError:
