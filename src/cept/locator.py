@@ -10,6 +10,7 @@ dashes — that single rule covers most discovery cases.
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -95,27 +96,35 @@ def verify_session(
     projects_dir: Path = PROJECTS_DIR,
     max_candidates: int = 6,
     scan_bytes: int = 128 * 1024,
+    flush_wait_seconds: float = 2.5,
+    poll_interval: float = 0.2,
 ) -> SessionLocation | None:
     """Return the JSONL whose recent tool_use input carries the given cept_id.
 
-    Scans the most recently modified candidate files in the project directory
-    (capped by ``max_candidates``), inspecting only the trailing ``scan_bytes``
-    of each — the relevant tool_use is essentially always near the end.
+    Polls for up to ``flush_wait_seconds`` to absorb Claude Code's JSONL
+    write-buffering delay (typically ~1s). The first scan happens immediately;
+    if the id isn't found, we sleep ``poll_interval`` and rescan, up to the
+    deadline. Success on the first pass adds zero latency.
     """
     project_dir = _resolve_project_dir(cwd, projects_dir)
     if not project_dir.exists():
         return None
 
-    candidates = sorted(
-        (p for p in project_dir.iterdir() if p.suffix == ".jsonl"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )[:max_candidates]
+    deadline = time.monotonic() + flush_wait_seconds
+    while True:
+        candidates = sorted(
+            (p for p in project_dir.iterdir() if p.suffix == ".jsonl"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )[:max_candidates]
 
-    for f in candidates:
-        if _file_has_cept_id(f, cept_id, scan_bytes):
-            return SessionLocation(f, f.stem, project_dir, source="cept_id")
-    return None
+        for f in candidates:
+            if _file_has_cept_id(f, cept_id, scan_bytes):
+                return SessionLocation(f, f.stem, project_dir, source="cept_id")
+
+        if time.monotonic() >= deadline:
+            return None
+        time.sleep(poll_interval)
 
 
 def _file_has_cept_id(path: Path, cept_id: str, scan_bytes: int) -> bool:
