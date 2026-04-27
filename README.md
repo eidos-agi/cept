@@ -32,6 +32,37 @@ cd cept
 uv sync
 ```
 
+## Per-tree keys with `.ceptkey`
+
+Drop a `.ceptkey` (preferred) or `ceptkey` file anywhere in your directory tree. Cept walks up from the working directory until it finds one, then loads it as dotenv. **The file overrides process env** — so if you have `OPENROUTER_API_KEY` exported in your shell but a `.ceptkey` in the project tree, the project key wins. That's the point: per-folder cost attribution and project-specific model defaults.
+
+```ini
+# ~/projects/clientA/.ceptkey — billed to client A's account
+OPENROUTER_API_KEY=sk-or-clientA...
+CEPT_DEFAULT_MODEL=anthropic/claude-sonnet-4-5:online
+CEPT_LOOKBACK_MINUTES=10
+```
+
+```ini
+# ~/projects/personal/.ceptkey — your own account, cheaper model on personal repos
+OPENROUTER_API_KEY=sk-or-personal...
+CEPT_DEFAULT_MODEL=perplexity/sonar
+```
+
+Walk stops at the first match. Capped at `$HOME` when cwd is under home; otherwise capped at filesystem root. Add `.ceptkey` and `ceptkey` to your global gitignore so you never commit one by accident.
+
+Recognized keys:
+
+| Key | Effect |
+|-----|--------|
+| `OPENROUTER_API_KEY` | OpenRouter credential. |
+| `OPENROUTER_REFERER` | Optional `HTTP-Referer` header for OpenRouter app rankings. |
+| `OPENROUTER_TITLE` | Optional `X-Title` header. |
+| `CEPT_DEFAULT_MODEL` | Per-tree default model (e.g. `openai/gpt-5:online`). |
+| `CEPT_LOOKBACK_MINUTES` | Per-tree default lookback window. |
+
+> ⚠️ Trust model: cept loads any `.ceptkey` it finds while walking up. If you `cd` into a hostile repo with a malicious `.ceptkey`, your packets would route to that endpoint. Blast radius is the redacted packet (no real key exfil), but be aware. v1 doesn't do `direnv allow`-style ceremony — just don't `cd` into untrusted trees.
+
 ## Model selection (via OpenRouter)
 
 cept uses [OpenRouter](https://openrouter.ai) as the gateway, so you can swap models without changing the client.

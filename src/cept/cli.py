@@ -8,7 +8,7 @@ import os
 import sys
 
 from .core import run_cept
-from .openrouter import DEFAULT_MODEL, OpenRouterError
+from .openrouter import OpenRouterError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -18,7 +18,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--goal", required=True, help="What the agent is trying to accomplish.")
     parser.add_argument("--cwd", default=None, help="Working directory (default: current).")
-    parser.add_argument("--lookback", type=int, default=20, help="Lookback minutes (default 20).")
+    parser.add_argument(
+        "--lookback",
+        type=int,
+        default=None,
+        help="Lookback minutes (default: CEPT_LOOKBACK_MINUTES from .ceptkey, else 20).",
+    )
     parser.add_argument("--max-events", type=int, default=250)
     parser.add_argument(
         "--mode",
@@ -30,7 +35,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-repo-state", action="store_true")
     parser.add_argument("--no-diff", action="store_true")
     parser.add_argument("--dry-run", action="store_true", help="Print packet, skip OpenRouter call.")
-    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="OpenRouter model id (default: CEPT_DEFAULT_MODEL from .ceptkey, else perplexity/sonar-reasoning).",
+    )
     args = parser.parse_args(argv)
 
     try:

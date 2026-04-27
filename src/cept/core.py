@@ -6,14 +6,14 @@ import os
 from pathlib import Path
 from typing import Any
 
-from . import distiller, locator, openrouter, packet, repo_state
+from . import distiller, keyfile, locator, openrouter, packet, repo_state
 
 
 def run_cept(
     *,
     goal: str,
     cwd: str | Path | None = None,
-    lookback_minutes: int = 20,
+    lookback_minutes: int | None = None,
     max_events: int = 250,
     mode: str = "steer",
     session_id: str | None = None,
@@ -22,9 +22,17 @@ def run_cept(
     question: str | None = None,
     dry_run: bool = False,
     api_key: str | None = None,
-    model: str = openrouter.DEFAULT_MODEL,
+    model: str | None = None,
 ) -> dict[str, Any]:
     cwd = str(cwd or os.getcwd())
+
+    # Per-tree credentials and defaults (file wins over process env).
+    keyfile_result = keyfile.load_for(cwd)
+
+    if lookback_minutes is None:
+        lookback_minutes = _int_env("CEPT_LOOKBACK_MINUTES", 20)
+    if model is None:
+        model = os.environ.get("CEPT_DEFAULT_MODEL") or openrouter.DEFAULT_MODEL
 
     location = locator.find_session(cwd=cwd, session_id=session_id)
     events = distiller.parse_jsonl(location.path)
@@ -55,6 +63,14 @@ def run_cept(
             "events_in_window": len(recent),
             "total_events": len(events),
         },
+        "keyfile": {
+            "path": str(keyfile_result.path) if keyfile_result.path else None,
+            "keys_set": keyfile_result.keys_set,
+        },
+        "config": {
+            "model": model,
+            "lookback_minutes": lookback_minutes,
+        },
         "packet": pkt,
     }
 
@@ -65,3 +81,13 @@ def run_cept(
     guidance = openrouter.ask(pkt, api_key=api_key, model=model)
     result["guidance"] = guidance
     return result
+
+
+def _int_env(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default

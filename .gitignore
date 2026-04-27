@@ -9,5 +9,7 @@ dist/
 build/
 .env
 .envrc
+.ceptkey
+ceptkey
 .DS_Store
 .coverage

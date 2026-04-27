@@ -8,7 +8,7 @@ import os
 from mcp.server.fastmcp import FastMCP
 
 from .core import run_cept
-from .openrouter import DEFAULT_MODEL, OpenRouterError
+from .openrouter import OpenRouterError
 
 
 mcp = FastMCP("cept")
@@ -17,14 +17,14 @@ mcp = FastMCP("cept")
 @mcp.tool()
 def cept(
     goal: str,
-    lookback_minutes: int = 20,
+    lookback_minutes: int | None = None,
     mode: str = "steer",
     question: str | None = None,
     session_id: str | None = None,
     include_repo_state: bool = True,
     include_diff: bool = True,
     max_events: int = 250,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
 ) -> str:
     """Inspect the recent Claude Code transcript and return outside-in steering guidance.
 
@@ -35,19 +35,21 @@ def cept(
 
     Args:
         goal: What the agent is currently trying to accomplish.
-        lookback_minutes: How far back to inspect (1–120, default 20).
+        lookback_minutes: How far back to inspect (1–120). If None, falls back
+            to CEPT_LOOKBACK_MINUTES env (set via .ceptkey) or 20.
         mode: One of "steer" (default), "debug", "research", "architecture".
         question: Optional specific question to forward.
         session_id: Optional explicit Claude Code session UUID.
         include_repo_state: Whether to attach git status/diff/branch.
         include_diff: Whether to include `git diff --stat`.
         max_events: Cap on events to keep after the lookback filter.
-        model: OpenRouter model id. Default "perplexity/sonar-reasoning"
-            (Perplexity's reasoning + web search). Append ":online" to any
-            model name to force web search where supported.
+        model: OpenRouter model id. If None, falls back to CEPT_DEFAULT_MODEL
+            env (set via .ceptkey) or "perplexity/sonar-reasoning". Append
+            ":online" to any model name to force web search where supported.
     """
     cwd = os.getcwd()
-    lookback_minutes = max(1, min(int(lookback_minutes), 120))
+    if lookback_minutes is not None:
+        lookback_minutes = max(1, min(int(lookback_minutes), 120))
     max_events = max(20, min(int(max_events), 1000))
     if mode not in {"steer", "debug", "research", "architecture"}:
         mode = "steer"
