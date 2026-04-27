@@ -35,6 +35,7 @@ def _emitter_from_env() -> events.Emitter:
 @mcp.tool()
 def cept(
     goal: str,
+    cept_id: str | None = None,
     lookback_minutes: int | None = None,
     mode: str = "steer",
     question: str | None = None,
@@ -51,19 +52,30 @@ def cept(
     of events, redacts secrets, and asks an OpenRouter model (with web search)
     for ranked guidance.
 
+    SESSION VERIFICATION (important): if multiple Claude Code sessions are
+    open in the same project, mtime-based discovery can pick the wrong file.
+    For a deterministic two-way handshake, ALWAYS pass a fresh ``cept_id`` —
+    a 10-character random hex string — when invoking this tool. cept then
+    finds the JSONL whose tool_use input carries that exact id, confirming
+    the file matches *this* call. Generate a new id every invocation.
+
     Args:
         goal: What the agent is currently trying to accomplish.
+        cept_id: A short (~10 char) random nonce. Must be unique per call.
+            When provided, cept verifies it appears in a recent tool_use
+            input in exactly one JSONL — that's the calling session.
+            Skip only if you know there's just one session in this project.
         lookback_minutes: How far back to inspect (1–120). If None, falls back
             to CEPT_LOOKBACK_MINUTES env (set via .ceptkey) or 20.
         mode: One of "steer" (default), "debug", "research", "architecture".
         question: Optional specific question to forward.
-        session_id: Optional explicit Claude Code session UUID.
+        session_id: Optional explicit Claude Code session UUID (overrides cept_id).
         include_repo_state: Whether to attach git status/diff/branch.
         include_diff: Whether to include `git diff --stat`.
         max_events: Cap on events to keep after the lookback filter.
         model: OpenRouter model id. If None, falls back to CEPT_DEFAULT_MODEL
-            env (set via .ceptkey) or "perplexity/sonar-reasoning". Append
-            ":online" to any model name to force web search where supported.
+            env (set via .ceptkey) or "perplexity/sonar-pro". Append ":online"
+            to any model name to force web search where supported.
     """
     cwd = os.getcwd()
     if lookback_minutes is not None:
@@ -85,6 +97,7 @@ def cept(
             include_diff=include_diff,
             question=question,
             model=model,
+            cept_id=cept_id,
             emitter=emitter,
         )
     except FileNotFoundError as e:

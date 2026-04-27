@@ -40,9 +40,21 @@ def cwd_to_project_dir(cwd: str | Path) -> Path:
 def find_session(
     cwd: str | Path,
     session_id: str | None = None,
+    cept_id: str | None = None,
     projects_dir: Path = PROJECTS_DIR,
     history_file: Path = HISTORY_FILE,
 ) -> SessionLocation:
+    """Locate the JSONL backing the active session.
+
+    Resolution order:
+      1. ``session_id`` — explicit Claude Code UUID, exact match required.
+      2. ``cept_id``   — caller-supplied nonce. Scan recent JSONLs in the
+         project dir for a tool_use input containing this id; that file is
+         confirmed to be the calling session. Two-way handshake.
+      3. mtime fallback — newest JSONL in the project dir. Works because
+         Claude Code is the only process actively writing.
+      4. history.jsonl — last known session for this cwd.
+    """
     project_dir = _resolve_project_dir(cwd, projects_dir)
 
     if session_id:
@@ -53,6 +65,15 @@ def find_session(
         if scan:
             return SessionLocation(scan, session_id, scan.parent, "explicit-scan")
         raise FileNotFoundError(f"No JSONL found for session_id {session_id}")
+
+    if cept_id:
+        verified = verify_session(cwd, cept_id, projects_dir=projects_dir)
+        if verified:
+            return verified
+        raise FileNotFoundError(
+            f"No JSONL contains cept_id {cept_id!r} in a recent tool_use input. "
+            "Either the id was wrong or the calling session has not yet flushed."
+        )
 
     newest = _newest_jsonl(project_dir)
     if newest:
@@ -66,6 +87,74 @@ def find_session(
         f"No Claude Code session JSONL found for cwd={cwd}. "
         f"Looked in {project_dir} and {history_file}."
     )
+
+
+def verify_session(
+    cwd: str | Path,
+    cept_id: str,
+    projects_dir: Path = PROJECTS_DIR,
+    max_candidates: int = 6,
+    scan_bytes: int = 128 * 1024,
+) -> SessionLocation | None:
+    """Return the JSONL whose recent tool_use input carries the given cept_id.
+
+    Scans the most recently modified candidate files in the project directory
+    (capped by ``max_candidates``), inspecting only the trailing ``scan_bytes``
+    of each — the relevant tool_use is essentially always near the end.
+    """
+    project_dir = _resolve_project_dir(cwd, projects_dir)
+    if not project_dir.exists():
+        return None
+
+    candidates = sorted(
+        (p for p in project_dir.iterdir() if p.suffix == ".jsonl"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )[:max_candidates]
+
+    for f in candidates:
+        if _file_has_cept_id(f, cept_id, scan_bytes):
+            return SessionLocation(f, f.stem, project_dir, source="cept_id")
+    return None
+
+
+def _file_has_cept_id(path: Path, cept_id: str, scan_bytes: int) -> bool:
+    """Tail-scan a JSONL for a tool_use whose input carries ``cept_id``."""
+    try:
+        size = path.stat().st_size
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            if size > scan_bytes:
+                fh.seek(size - scan_bytes)
+                fh.readline()  # discard partial first line
+            text = fh.read()
+    except OSError:
+        return False
+
+    if cept_id not in text:
+        return False  # cheap reject
+
+    for line in text.splitlines():
+        if cept_id not in line:
+            continue
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        msg = ev.get("message") or {}
+        content = msg.get("content")
+        if not isinstance(content, list):
+            continue
+        for item in content:
+            if not isinstance(item, dict) or item.get("type") != "tool_use":
+                continue
+            inp = item.get("input")
+            if isinstance(inp, dict) and inp.get("cept_id") == cept_id:
+                return True
+            # Also accept stringified input that contains the id (Claude Code
+            # sometimes serializes input as a string)
+            if isinstance(inp, str) and cept_id in inp:
+                return True
+    return False
 
 
 def _resolve_project_dir(cwd: str | Path, projects_dir: Path) -> Path:

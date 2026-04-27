@@ -17,6 +17,7 @@ def run_cept(
     max_events: int = 250,
     mode: str = "steer",
     session_id: str | None = None,
+    cept_id: str | None = None,
     include_repo_state: bool = True,
     include_diff: bool = True,
     question: str | None = None,
@@ -49,13 +50,20 @@ def run_cept(
             model = os.environ.get("CEPT_DEFAULT_MODEL") or openrouter.DEFAULT_MODEL
 
         # ---- locate active session JSONL --------------------------------
-        with em.phase("locating", "locating active Claude Code session"):
-            location = locator.find_session(cwd=cwd, session_id=session_id)
+        with em.phase(
+            "locating",
+            "locating active Claude Code session",
+            cept_id=cept_id,
+        ):
+            location = locator.find_session(
+                cwd=cwd, session_id=session_id, cept_id=cept_id
+            )
         em.emit(
             "session.found",
             location.path.name,
             session_id=location.session_id,
             discovery=location.source,
+            verified=(location.source == "cept_id"),
         )
 
         # ---- parse + filter ---------------------------------------------

@@ -35,6 +35,11 @@ def main(argv: list[str] | None = None) -> int:
         default="steer",
     )
     parser.add_argument("--session-id", default=None)
+    parser.add_argument(
+        "--cept-id",
+        default=None,
+        help="Two-way session verification nonce. When set, cept finds the JSONL whose recent tool_use input carries this id (and errors otherwise). Mostly relevant when called via MCP.",
+    )
     parser.add_argument("--question", default=None)
     parser.add_argument("--no-repo-state", action="store_true")
     parser.add_argument("--no-diff", action="store_true")
@@ -74,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
             max_events=args.max_events,
             mode=args.mode,
             session_id=args.session_id,
+            cept_id=args.cept_id,
             include_repo_state=not args.no_repo_state,
             include_diff=not args.no_diff,
             question=args.question,

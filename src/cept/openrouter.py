@@ -20,7 +20,7 @@ import httpx
 
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "perplexity/sonar-reasoning"
+DEFAULT_MODEL = "perplexity/sonar-pro"
 
 
 SYSTEM_PROMPTS = {

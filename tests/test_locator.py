@@ -88,3 +88,129 @@ def test_find_session_raises_when_nothing_found(fake_claude, tmp_path):
     cwd.mkdir()
     with pytest.raises(FileNotFoundError):
         locator.find_session(cwd=cwd, projects_dir=projects, history_file=history)
+
+
+# ---------------- cept_id two-way verification ----------------------------
+
+
+def _write_jsonl_with_tool_use(path: Path, *, cept_id: str | None) -> None:
+    """Write a synthetic Claude Code-shaped JSONL containing one tool_use."""
+    events_lines = [
+        json.dumps({"type": "permission-mode", "permissionMode": "auto"}),
+        json.dumps({
+            "type": "user",
+            "timestamp": "2026-04-27T20:00:00Z",
+            "message": {"role": "user", "content": "do something"},
+        }),
+    ]
+    if cept_id is not None:
+        events_lines.append(json.dumps({
+            "type": "assistant",
+            "timestamp": "2026-04-27T20:00:01Z",
+            "message": {
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "id": "toolu_xxx",
+                        "name": "cept",
+                        "input": {"goal": "test", "cept_id": cept_id},
+                    }
+                ],
+            },
+        }))
+    path.write_text("\n".join(events_lines) + "\n")
+
+
+def test_verify_session_finds_jsonl_with_matching_cept_id(fake_claude, tmp_path):
+    projects, _ = fake_claude
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    project_dir = projects / str(cwd.resolve()).replace("/", "-")
+    project_dir.mkdir(parents=True)
+
+    other = project_dir / "other.jsonl"
+    target = project_dir / "active.jsonl"
+    _write_jsonl_with_tool_use(other, cept_id=None)
+    _write_jsonl_with_tool_use(target, cept_id="abc1234567")
+
+    loc = locator.verify_session(cwd=cwd, cept_id="abc1234567", projects_dir=projects)
+    assert loc is not None
+    assert loc.path == target
+    assert loc.source == "cept_id"
+
+
+def test_verify_session_returns_none_for_unknown_id(fake_claude, tmp_path):
+    projects, _ = fake_claude
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    project_dir = projects / str(cwd.resolve()).replace("/", "-")
+    project_dir.mkdir(parents=True)
+
+    f = project_dir / "s.jsonl"
+    _write_jsonl_with_tool_use(f, cept_id="abc1234567")
+
+    assert locator.verify_session(cwd=cwd, cept_id="zzz9999999", projects_dir=projects) is None
+
+
+def test_find_session_prefers_cept_id_over_mtime(fake_claude, tmp_path):
+    """When cept_id is supplied, an older file matching the id wins over the newer one."""
+    import time
+    projects, history = fake_claude
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    project_dir = projects / str(cwd.resolve()).replace("/", "-")
+    project_dir.mkdir(parents=True)
+
+    older = project_dir / "older-but-correct.jsonl"
+    newer = project_dir / "newer-but-wrong.jsonl"
+    _write_jsonl_with_tool_use(older, cept_id="match-me-1")
+    time.sleep(0.05)
+    _write_jsonl_with_tool_use(newer, cept_id="some-other-id")
+
+    loc = locator.find_session(
+        cwd=cwd,
+        cept_id="match-me-1",
+        projects_dir=projects,
+        history_file=history,
+    )
+    assert loc.path == older
+    assert loc.source == "cept_id"
+
+
+def test_find_session_raises_when_cept_id_not_found(fake_claude, tmp_path):
+    projects, history = fake_claude
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    project_dir = projects / str(cwd.resolve()).replace("/", "-")
+    project_dir.mkdir(parents=True)
+
+    f = project_dir / "s.jsonl"
+    _write_jsonl_with_tool_use(f, cept_id=None)
+
+    with pytest.raises(FileNotFoundError):
+        locator.find_session(
+            cwd=cwd,
+            cept_id="will-not-be-there",
+            projects_dir=projects,
+            history_file=history,
+        )
+
+
+def test_verify_session_ignores_id_in_non_tool_use_text(fake_claude, tmp_path):
+    """The id appearing in user-message text shouldn't false-positive."""
+    projects, _ = fake_claude
+    cwd = tmp_path / "repo"
+    cwd.mkdir()
+    project_dir = projects / str(cwd.resolve()).replace("/", "-")
+    project_dir.mkdir(parents=True)
+
+    f = project_dir / "s.jsonl"
+    f.write_text(json.dumps({
+        "type": "user",
+        "timestamp": "2026-04-27T20:00:00Z",
+        "message": {"role": "user", "content": "the id is abc1234567 in this text"},
+    }) + "\n")
+
+    # No tool_use carrying the id, so verify_session should not match.
+    assert locator.verify_session(cwd=cwd, cept_id="abc1234567", projects_dir=projects) is None
