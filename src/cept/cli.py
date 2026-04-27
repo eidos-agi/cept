@@ -7,8 +7,12 @@ import json
 import os
 import sys
 
+from . import events
 from .core import run_cept
 from .openrouter import OpenRouterError
+
+
+_DEFAULT_EMITS = ["stderr"]  # text progress to stderr keeps stdout clean for the JSON
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,7 +44,27 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="OpenRouter model id (default: CEPT_DEFAULT_MODEL from .ceptkey, else perplexity/sonar-reasoning).",
     )
+    parser.add_argument(
+        "--emit",
+        action="append",
+        default=None,
+        metavar="SPEC",
+        help=(
+            "Adapter for progress events. Repeatable. Specs: "
+            "stdout, stderr, jsonl:-, jsonl:PATH, file:PATH, socket:PATH, "
+            "subprocess:CMD, hud, notify, noop. Default: stderr."
+        ),
+    )
+    parser.add_argument("--quiet", action="store_true", help="Disable all event emission.")
     args = parser.parse_args(argv)
+
+    if args.quiet:
+        emit_specs: list[str] = ["noop"]
+    else:
+        emit_specs = args.emit if args.emit else _DEFAULT_EMITS
+
+    adapters = events.parse_emit_specs(emit_specs)
+    emitter = events.Emitter(adapters=adapters)
 
     try:
         result = run_cept(
@@ -55,13 +79,18 @@ def main(argv: list[str] | None = None) -> int:
             question=args.question,
             dry_run=args.dry_run,
             model=args.model,
+            emitter=emitter,
         )
     except FileNotFoundError as e:
         print(f"error: {e}", file=sys.stderr)
+        emitter.close()
         return 2
     except OpenRouterError as e:
         print(f"openrouter error: {e}", file=sys.stderr)
+        emitter.close()
         return 3
+    finally:
+        emitter.close()
 
     json.dump(result, sys.stdout, indent=2, default=str)
     sys.stdout.write("\n")

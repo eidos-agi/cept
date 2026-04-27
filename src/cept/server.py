@@ -7,11 +7,29 @@ import os
 
 from mcp.server.fastmcp import FastMCP
 
+from . import events
 from .core import run_cept
 from .openrouter import OpenRouterError
 
 
 mcp = FastMCP("cept")
+
+
+def _emitter_from_env() -> events.Emitter:
+    """Build an Emitter from CEPT_EMIT (comma-separated specs).
+
+    MCP servers must NOT write to stdout (that's the JSON-RPC channel).
+    Default is noop. Common useful settings:
+
+      CEPT_EMIT=hud                                  # popup
+      CEPT_EMIT=notify                               # banners
+      CEPT_EMIT=file:~/.cept/status.jsonl            # log
+      CEPT_EMIT=hud,file:~/.cept/status.jsonl        # both
+    """
+    spec = os.environ.get("CEPT_EMIT", "").strip()
+    if not spec:
+        return events.Emitter()
+    return events.Emitter(adapters=events.parse_emit_specs(spec))
 
 
 @mcp.tool()
@@ -54,6 +72,7 @@ def cept(
     if mode not in {"steer", "debug", "research", "architecture"}:
         mode = "steer"
 
+    emitter = _emitter_from_env()
     try:
         result = run_cept(
             goal=goal,
@@ -66,6 +85,7 @@ def cept(
             include_diff=include_diff,
             question=question,
             model=model,
+            emitter=emitter,
         )
     except FileNotFoundError as e:
         return _err(f"Session JSONL not found: {e}")
@@ -73,6 +93,8 @@ def cept(
         return _err(f"OpenRouter call failed: {e}")
     except Exception as e:  # last-resort guard so MCP host gets a clean string
         return _err(f"Unexpected error: {e}")
+    finally:
+        emitter.close()
 
     return json.dumps(result, indent=2, default=str)
 
