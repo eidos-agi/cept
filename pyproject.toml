@@ -23,6 +23,7 @@ dev = [
 cept = "cept.server:main"
 cept-cli = "cept.cli:main"
 cept-keyfile = "cept.keyfile_cli:main"
+cept-hud-install = "cept.hud_cli:main"
 
 [build-system]
 requires = ["hatchling"]

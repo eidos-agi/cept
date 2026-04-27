@@ -247,8 +247,21 @@ def parse_emit_spec(spec: str) -> Adapter:
     if s == "notify":
         return NotifyAdapter()
     if s == "hud":
-        cmd = os.environ.get("CEPT_HUD_CMD", "cept-hud --once")
-        return SubprocessAdapter(shlex.split(cmd))
+        # Explicit override wins (full command line)
+        explicit_cmd = os.environ.get("CEPT_HUD_CMD")
+        if explicit_cmd:
+            return SubprocessAdapter(shlex.split(explicit_cmd))
+        # Otherwise resolve the binary (auto-builds on first use)
+        from . import hud_install  # local import to avoid cycle on import-time
+        path = hud_install.ensure()
+        if not path:
+            print(
+                "cept: --emit hud requested but cept-hud unavailable; falling back to noop. "
+                "Try: cept-hud-install",
+                file=sys.stderr,
+            )
+            return NoopAdapter()
+        return SubprocessAdapter([str(path), "--once"])
     if ":" in s:
         kind, _, rest = s.partition(":")
         kind = kind.strip()

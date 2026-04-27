@@ -210,20 +210,36 @@ For the MCP server (where stdout is the JSON-RPC channel and must stay clean), s
 
 Anyone can write a different consumer (dashboard, Slack bridge, log forwarder) by reading JSONL with this schema.
 
-### Building the Swift HUD
+### The HUD just works
 
-The HUD lives in `hud/` as a self-contained SwiftPM package (Swift 5, macOS 13+). It's a translucent floating panel that auto-fades on EOF.
+`--emit hud` auto-builds the Swift binary on first use and caches it at `~/.cache/cept/cept-hud` (or `$XDG_CACHE_HOME/cept/cept-hud`). First call costs ~5-10 seconds; subsequent calls are instant. You don't need to know Swift exists.
 
 ```bash
-cd hud
-swift build -c release
-# Either symlink onto $PATH:
-ln -sf "$PWD/.build/release/cept-hud" /usr/local/bin/cept-hud
-# Or point cept at it via env:
-export CEPT_HUD_CMD="$PWD/.build/release/cept-hud --once"
+# First time: cept builds cept-hud, then runs.
+cept-cli --goal "..." --emit hud
+
+# Every time after: cache hit, no build, panel pops up.
 ```
 
-Then `--emit hud` (or `CEPT_EMIT=hud` for the MCP server) spawns it for the duration of each cept call. No Dock icon, click-through, top-right of the active screen.
+Resolution order:
+
+1. `$CEPT_HUD_CMD` — full command override (e.g. for testing builds)
+2. `$CEPT_HUD_BIN` — path to a binary you already have
+3. `cept-hud` on `$PATH`
+4. `~/.cache/cept/cept-hud` — auto-built and cached
+5. Build from `hud/Package.swift` next to the cept package — first-call cost
+
+If none work (no Swift toolchain, source missing) `--emit hud` falls back to noop with a clear stderr message.
+
+Want to pre-build (e.g. in CI) or refresh the cache?
+
+```bash
+cept-hud-install            # build if missing
+cept-hud-install --force    # rebuild
+cept-hud-install --path     # print resolved binary path
+```
+
+The HUD itself is a translucent `NSPanel` (Swift 5, macOS 13+, top-right of the active screen, click-through, no Dock icon). Source lives in `hud/`.
 
 ## Layers
 
