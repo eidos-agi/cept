@@ -66,6 +66,7 @@ def run_cept(
         "keyfile": {
             "path": str(keyfile_result.path) if keyfile_result.path else None,
             "keys_set": keyfile_result.keys_set,
+            "metadata": keyfile_result.metadata,
         },
         "config": {
             "model": model,

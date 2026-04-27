@@ -22,6 +22,7 @@ dev = [
 [project.scripts]
 cept = "cept.server:main"
 cept-cli = "cept.cli:main"
+cept-keyfile = "cept.keyfile_cli:main"
 
 [build-system]
 requires = ["hatchling"]

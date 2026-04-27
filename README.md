@@ -36,18 +36,44 @@ uv sync
 
 Drop a `.ceptkey` (preferred) or `ceptkey` file anywhere in your directory tree. Cept walks up from the working directory until it finds one, then loads it as dotenv. **The file overrides process env** — so if you have `OPENROUTER_API_KEY` exported in your shell but a `.ceptkey` in the project tree, the project key wins. That's the point: per-folder cost attribution and project-specific model defaults.
 
+Easiest way is to use the bundled scaffold:
+
+```bash
+cept-keyfile init \
+  --service openrouter \
+  --name cept-djs-01 \
+  --key sk-or-... \
+  --model perplexity/sonar-reasoning \
+  --scope "~/repos-eidos-agi/" \
+  --notes "Eidos AGI shared key" \
+  --path ~/repos-eidos-agi/.ceptkey
+```
+
+That writes a 0600-permissioned file with auto-populated provenance (`created_at`, `created_on`, `created_by`, `created_os`) plus the values you passed. Inspect at any time:
+
+```bash
+cept-keyfile show          # nearest keyfile, metadata only — no values
+cept-keyfile where         # just the path
+```
+
+By hand it looks like:
+
 ```ini
-# ~/projects/clientA/.ceptkey — billed to client A's account
+# cept-meta:service=openrouter
+# cept-meta:key_name=cept-djs-01
+# cept-meta:created_at=2026-04-27T18:16:44+00:00
+# cept-meta:created_on=daniels-mbp.local
+# cept-meta:created_by=daniel@eidosagi.com
+# cept-meta:created_os=Darwin 24.3.0 (arm64)
+# cept-meta:scope=~/repos-eidos-agi/
+# cept-meta:notes=Eidos AGI shared key
+
 OPENROUTER_API_KEY=sk-or-clientA...
 CEPT_DEFAULT_MODEL=anthropic/claude-sonnet-4-5:online
 CEPT_LOOKBACK_MINUTES=10
 ```
 
-```ini
-# ~/projects/personal/.ceptkey — your own account, cheaper model on personal repos
-OPENROUTER_API_KEY=sk-or-personal...
-CEPT_DEFAULT_MODEL=perplexity/sonar
-```
+`# cept-meta:` lines are pure comments to anything that isn't cept (including `source ./.ceptkey` in your shell), but cept captures them as a metadata block surfaced in the result. Useful for auditing which key is which without leaking values.
 
 Walk stops at the first match. Capped at `$HOME` when cwd is under home; otherwise capped at filesystem root. Add `.ceptkey` and `ceptkey` to your global gitignore so you never commit one by accident.
 
