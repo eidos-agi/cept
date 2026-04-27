@@ -24,12 +24,12 @@ import subprocess
 import sys
 import time
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import IO, Any, Iterator, Protocol, runtime_checkable
-
+from typing import IO, Any, Protocol, runtime_checkable
 
 # ---------------------------------------------------------------- Event ----
 
@@ -253,6 +253,7 @@ def parse_emit_spec(spec: str) -> Adapter:
             return SubprocessAdapter(shlex.split(explicit_cmd))
         # Otherwise resolve the binary (auto-builds on first use)
         from . import hud_install  # local import to avoid cycle on import-time
+
         path = hud_install.ensure()
         if not path:
             print(
@@ -319,7 +320,7 @@ class Emitter:
         ev = Event(
             run_id=self.run_id,
             seq=self.seq,
-            ts=datetime.now(timezone.utc).isoformat(),
+            ts=datetime.now(UTC).isoformat(),
             phase=phase,
             level=level,
             msg=msg,

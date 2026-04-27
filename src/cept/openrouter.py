@@ -18,7 +18,6 @@ from typing import Any
 
 import httpx
 
-
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "perplexity/sonar-pro"
 

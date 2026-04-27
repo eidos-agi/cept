@@ -13,8 +13,13 @@ from cept import events
 
 def test_event_jsonl_round_trips() -> None:
     ev = events.Event(
-        run_id="abc", seq=3, ts="2026-04-27T00:00:00Z",
-        phase="locating", level="info", msg="hi", data={"k": 1},
+        run_id="abc",
+        seq=3,
+        ts="2026-04-27T00:00:00Z",
+        phase="locating",
+        level="info",
+        msg="hi",
+        data={"k": 1},
     )
     out = json.loads(ev.to_jsonl())
     assert out == ev.to_dict()
@@ -68,6 +73,7 @@ def test_socket_adapter_writes_when_listener_present() -> None:
     # macOS AF_UNIX paths cap at 104 chars — pytest tmp_path is too deep.
     import os
     import tempfile
+
     sock_dir = tempfile.mkdtemp(prefix="cept-", dir="/tmp")
     sock_path = Path(sock_dir) / "t.sock"
     received: list[str] = []
@@ -86,7 +92,7 @@ def test_socket_adapter_writes_when_listener_present() -> None:
                 conn.settimeout(2.0)
                 try:
                     chunk = conn.recv(4096)
-                except socketlib.timeout:
+                except TimeoutError:
                     break
                 if not chunk:
                     break

@@ -63,7 +63,7 @@ By hand it looks like:
 # cept-meta:key_name=cept-djs-01
 # cept-meta:created_at=2026-04-27T18:16:44+00:00
 # cept-meta:created_on=daniels-mbp.local
-# cept-meta:created_by=daniel@eidosagi.com
+# cept-meta:created_by=dev@example.com
 # cept-meta:created_os=Darwin 24.3.0 (arm64)
 # cept-meta:scope=~/repos-eidos-agi/
 # cept-meta:notes=Eidos AGI shared key

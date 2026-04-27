@@ -15,7 +15,7 @@ import platform
 import socket
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import keyfile
@@ -26,15 +26,21 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     init_p = sub.add_parser("init", help="Create a new .ceptkey with metadata.")
-    init_p.add_argument("--service", default="openrouter", help="Service name (default: openrouter).")
+    init_p.add_argument(
+        "--service", default="openrouter", help="Service name (default: openrouter)."
+    )
     init_p.add_argument("--name", required=True, help="Human-readable key name (e.g. cept-djs-01).")
     init_p.add_argument("--key", required=True, help="The OPENROUTER_API_KEY value.")
-    init_p.add_argument("--env-var", default="OPENROUTER_API_KEY", help="Env var name to write the key under.")
+    init_p.add_argument(
+        "--env-var", default="OPENROUTER_API_KEY", help="Env var name to write the key under."
+    )
     init_p.add_argument("--model", default=None, help="Sets CEPT_DEFAULT_MODEL.")
     init_p.add_argument("--lookback", type=int, default=None, help="Sets CEPT_LOOKBACK_MINUTES.")
     init_p.add_argument("--referer", default=None, help="Sets OPENROUTER_REFERER.")
     init_p.add_argument("--title", default=None, help="Sets OPENROUTER_TITLE.")
-    init_p.add_argument("--scope", default=None, help="Free-form scope description (e.g. ~/repos-eidos-agi/).")
+    init_p.add_argument(
+        "--scope", default=None, help="Free-form scope description (e.g. ~/repos-eidos-agi/)."
+    )
     init_p.add_argument("--notes", default=None, help="Free-form notes.")
     init_p.add_argument(
         "--path",
@@ -67,7 +73,7 @@ def _cmd_init(args: argparse.Namespace) -> int:
         print(f"error: {target} already exists. Use --force to overwrite.", file=sys.stderr)
         return 2
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     host = platform.node() or socket.gethostname() or "unknown"
     user = _git_user_email() or os.environ.get("USER") or "unknown"
     osinfo = f"{platform.system()} {platform.release()} ({platform.machine()})"

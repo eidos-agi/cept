@@ -11,7 +11,6 @@ from . import events
 from .core import run_cept
 from .openrouter import OpenRouterError
 
-
 _DEFAULT_EMITS = ["stderr"]  # text progress to stderr keeps stdout clean for the JSON
 
 
@@ -43,7 +42,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--question", default=None)
     parser.add_argument("--no-repo-state", action="store_true")
     parser.add_argument("--no-diff", action="store_true")
-    parser.add_argument("--dry-run", action="store_true", help="Print packet, skip OpenRouter call.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print packet, skip OpenRouter call."
+    )
     parser.add_argument(
         "--model",
         default=None,

@@ -50,9 +50,7 @@ def test_init_writes_metadata_and_body(tmp_path: Path) -> None:
 def test_init_refuses_to_overwrite_without_force(tmp_path: Path) -> None:
     target = tmp_path / ".ceptkey"
     target.write_text("existing\n")
-    rc = keyfile_cli.main(
-        ["init", "--name", "k", "--key", "v", "--path", str(target)]
-    )
+    rc = keyfile_cli.main(["init", "--name", "k", "--key", "v", "--path", str(target)])
     assert rc == 2
     assert target.read_text() == "existing\n"
 
@@ -60,9 +58,7 @@ def test_init_refuses_to_overwrite_without_force(tmp_path: Path) -> None:
 def test_init_overwrites_with_force(tmp_path: Path) -> None:
     target = tmp_path / ".ceptkey"
     target.write_text("existing\n")
-    rc = keyfile_cli.main(
-        ["init", "--name", "k", "--key", "v", "--path", str(target), "--force"]
-    )
+    rc = keyfile_cli.main(["init", "--name", "k", "--key", "v", "--path", str(target), "--force"])
     assert rc == 0
     assert "existing" not in target.read_text()
     assert "OPENROUTER_API_KEY=v" in target.read_text()

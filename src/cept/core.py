@@ -55,9 +55,7 @@ def run_cept(
             "locating active Claude Code session",
             cept_id=cept_id,
         ):
-            location = locator.find_session(
-                cwd=cwd, session_id=session_id, cept_id=cept_id
-            )
+            location = locator.find_session(cwd=cwd, session_id=session_id, cept_id=cept_id)
         em.emit(
             "session.found",
             location.path.name,

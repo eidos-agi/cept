@@ -6,7 +6,6 @@ import os
 import re
 from typing import Any
 
-
 _HOME = os.path.expanduser("~")
 
 _PATTERNS: list[tuple[re.Pattern[str], str]] = [
@@ -19,7 +18,10 @@ _PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bASIA[0-9A-Z]{16}\b"), "[REDACTED_AWS_KEY_ID]"),
     # Bearer tokens / JWT-shaped strings
     (re.compile(r"Bearer\s+[A-Za-z0-9._\-]{20,}", re.I), "Bearer [REDACTED_TOKEN]"),
-    (re.compile(r"\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{6,}\b"), "[REDACTED_JWT]"),
+    (
+        re.compile(r"\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{6,}\b"),
+        "[REDACTED_JWT]",
+    ),
     # PEM blocks
     (
         re.compile(

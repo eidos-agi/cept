@@ -73,8 +73,7 @@ def test_find_session_falls_back_to_history(fake_claude, tmp_path):
     target.write_text("{}\n")
 
     history.write_text(
-        json.dumps({"project": cwd_str, "sessionId": "from-history", "timestamp": 1})
-        + "\n"
+        json.dumps({"project": cwd_str, "sessionId": "from-history", "timestamp": 1}) + "\n"
     )
 
     loc = locator.find_session(cwd=cwd, projects_dir=projects, history_file=history)
@@ -97,28 +96,34 @@ def _write_jsonl_with_tool_use(path: Path, *, cept_id: str | None) -> None:
     """Write a synthetic Claude Code-shaped JSONL containing one tool_use."""
     events_lines = [
         json.dumps({"type": "permission-mode", "permissionMode": "auto"}),
-        json.dumps({
-            "type": "user",
-            "timestamp": "2026-04-27T20:00:00Z",
-            "message": {"role": "user", "content": "do something"},
-        }),
+        json.dumps(
+            {
+                "type": "user",
+                "timestamp": "2026-04-27T20:00:00Z",
+                "message": {"role": "user", "content": "do something"},
+            }
+        ),
     ]
     if cept_id is not None:
-        events_lines.append(json.dumps({
-            "type": "assistant",
-            "timestamp": "2026-04-27T20:00:01Z",
-            "message": {
-                "role": "assistant",
-                "content": [
-                    {
-                        "type": "tool_use",
-                        "id": "toolu_xxx",
-                        "name": "cept",
-                        "input": {"goal": "test", "cept_id": cept_id},
-                    }
-                ],
-            },
-        }))
+        events_lines.append(
+            json.dumps(
+                {
+                    "type": "assistant",
+                    "timestamp": "2026-04-27T20:00:01Z",
+                    "message": {
+                        "role": "assistant",
+                        "content": [
+                            {
+                                "type": "tool_use",
+                                "id": "toolu_xxx",
+                                "name": "cept",
+                                "input": {"goal": "test", "cept_id": cept_id},
+                            }
+                        ],
+                    },
+                }
+            )
+        )
     path.write_text("\n".join(events_lines) + "\n")
 
 
@@ -156,6 +161,7 @@ def test_verify_session_returns_none_for_unknown_id(fake_claude, tmp_path):
 def test_find_session_prefers_cept_id_over_mtime(fake_claude, tmp_path):
     """When cept_id is supplied, an older file matching the id wins over the newer one."""
     import time
+
     projects, history = fake_claude
     cwd = tmp_path / "repo"
     cwd.mkdir()
@@ -206,11 +212,16 @@ def test_verify_session_ignores_id_in_non_tool_use_text(fake_claude, tmp_path):
     project_dir.mkdir(parents=True)
 
     f = project_dir / "s.jsonl"
-    f.write_text(json.dumps({
-        "type": "user",
-        "timestamp": "2026-04-27T20:00:00Z",
-        "message": {"role": "user", "content": "the id is abc1234567 in this text"},
-    }) + "\n")
+    f.write_text(
+        json.dumps(
+            {
+                "type": "user",
+                "timestamp": "2026-04-27T20:00:00Z",
+                "message": {"role": "user", "content": "the id is abc1234567 in this text"},
+            }
+        )
+        + "\n"
+    )
 
     # No tool_use carrying the id, so verify_session should not match.
     assert locator.verify_session(cwd=cwd, cept_id="abc1234567", projects_dir=projects) is None

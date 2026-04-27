@@ -14,7 +14,6 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-
 CLAUDE_HOME = Path.home() / ".claude"
 PROJECTS_DIR = CLAUDE_HOME / "projects"
 HISTORY_FILE = CLAUDE_HOME / "history.jsonl"

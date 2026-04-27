@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path  # noqa: F401  (kept for parse_jsonl test)
 
 from cept import distiller
 
 
 def _ts(minutes_ago: int) -> str:
-    return (datetime.now(timezone.utc) - timedelta(minutes=minutes_ago)).isoformat()
+    return (datetime.now(UTC) - timedelta(minutes=minutes_ago)).isoformat()
 
 
 def test_filter_recent_drops_old_events() -> None:
@@ -89,7 +89,7 @@ def test_loop_detection_flags_repeat_commands() -> None:
 
     events = [assistant_with_bash("npm test auth") for _ in range(4)]
     traj = distiller.distill(events)
-    assert any("Repeated command" in l for l in traj.loops_detected)
+    assert any("Repeated command" in line for line in traj.loops_detected)
 
 
 def test_parse_jsonl_skips_bad_lines(tmp_path: Path) -> None:

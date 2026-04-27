@@ -28,10 +28,9 @@ Recognized metadata keys (any string is accepted; these are conventions):
 from __future__ import annotations
 
 import os
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import MutableMapping
-
 
 KEYFILE_NAMES = (".ceptkey", "ceptkey")
 META_PREFIX = "cept-meta:"

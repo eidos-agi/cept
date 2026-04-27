@@ -116,7 +116,7 @@ def test_parse_keyfile_handles_quotes_comments_export(tmp_path: Path) -> None:
     f.write_text(
         "# top comment\n"
         "\n"
-        "  export OPENROUTER_API_KEY=\"quoted-value\"\n"
+        '  export OPENROUTER_API_KEY="quoted-value"\n'
         "OPENROUTER_TITLE='single quoted'\n"
         "# another comment\n"
         "BAREWORD=no-quotes\n"
@@ -134,8 +134,8 @@ def test_parse_keyfile_extracts_metadata(tmp_path: Path) -> None:
         "# cept-meta:key_name=cept-djs-01\n"
         "# cept-meta:created_at=2026-04-27T13:13:00+00:00\n"
         "# cept-meta:created_on=daniels-mbp\n"
-        "# cept-meta:created_by=daniel@eidosagi.com\n"
-        "# cept-meta:notes=\"Eidos AGI shared key\"\n"
+        "# cept-meta:created_by=dev@example.com\n"
+        '# cept-meta:notes="Eidos AGI shared key"\n'
         "# regular comment, ignored\n"
         "\n"
         "OPENROUTER_API_KEY=sk-or-test\n"
@@ -146,7 +146,7 @@ def test_parse_keyfile_extracts_metadata(tmp_path: Path) -> None:
     assert parsed.metadata["key_name"] == "cept-djs-01"
     assert parsed.metadata["created_at"] == "2026-04-27T13:13:00+00:00"
     assert parsed.metadata["created_on"] == "daniels-mbp"
-    assert parsed.metadata["created_by"] == "daniel@eidosagi.com"
+    assert parsed.metadata["created_by"] == "dev@example.com"
     assert parsed.metadata["notes"] == "Eidos AGI shared key"
 
 

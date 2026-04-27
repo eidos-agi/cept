@@ -11,7 +11,6 @@ from . import events
 from .core import run_cept
 from .openrouter import OpenRouterError
 
-
 mcp = FastMCP("cept")
 
 

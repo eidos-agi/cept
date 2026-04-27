@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Iterable
-
+from typing import Any
 
 # Tool calls that are book-keeping or read-only — exclude from "attempts"
 # because they don't represent progress on the underlying problem.
@@ -69,7 +69,7 @@ def filter_recent(
     max_events: int,
     now: datetime | None = None,
 ) -> list[dict[str, Any]]:
-    cutoff = (now or datetime.now(timezone.utc)) - timedelta(minutes=lookback_minutes)
+    cutoff = (now or datetime.now(UTC)) - timedelta(minutes=lookback_minutes)
     kept: list[dict[str, Any]] = []
     for ev in events:
         ts = _event_timestamp(ev)
@@ -124,9 +124,10 @@ def _handle_user(ev: dict[str, Any], traj: Trajectory) -> None:
     # User-role messages may contain only tool_results (the API convention).
     # Route those to the failure tracker and skip the user-intent path.
     if isinstance(content, list):
-        only_tool_results = all(
-            isinstance(c, dict) and c.get("type") == "tool_result" for c in content
-        ) and len(content) > 0
+        only_tool_results = (
+            all(isinstance(c, dict) and c.get("type") == "tool_result" for c in content)
+            and len(content) > 0
+        )
         if only_tool_results:
             for item in content:
                 _handle_tool_result(item, traj)
@@ -181,9 +182,7 @@ def _handle_tool_result(item: dict[str, Any], traj: Trajectory) -> None:
         return
     short = _trim(text, _STDERR_LIMIT)
     traj.stderr_highlights.append(short)
-    traj.tool_failures.append(
-        {"tool_use_id": item.get("tool_use_id"), "stderr": short}
-    )
+    traj.tool_failures.append({"tool_use_id": item.get("tool_use_id"), "stderr": short})
 
 
 def _handle_attachment(ev: dict[str, Any], traj: Trajectory) -> None:
@@ -253,7 +252,9 @@ def _extract_paths(tool_input: Any) -> list[str]:
 
 
 def _looks_like_intent(text: str) -> bool:
-    return bool(re.search(r"\b(want|need|let's|please|can you|build|fix|add|remove|refactor)\b", text, re.I))
+    return bool(
+        re.search(r"\b(want|need|let's|please|can you|build|fix|add|remove|refactor)\b", text, re.I)
+    )
 
 
 def _looks_like_question(text: str) -> bool:

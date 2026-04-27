@@ -30,8 +30,8 @@ def collect(cwd: str | Path, include_diff: bool = True) -> RepoState:
     status = _git(cwd, ["status", "--short"])
     if status:
         lines = status.splitlines()
-        state.dirty_files = [_extract_path(l) for l in lines if l.strip()]
-        state.untracked_count = sum(1 for l in lines if l.startswith("??"))
+        state.dirty_files = [_extract_path(line) for line in lines if line.strip()]
+        state.untracked_count = sum(1 for line in lines if line.startswith("??"))
 
     if include_diff:
         stat = _git(cwd, ["diff", "--stat"])

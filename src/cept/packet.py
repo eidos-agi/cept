@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from .distiller import Trajectory
@@ -23,7 +23,7 @@ def build_packet(
 ) -> dict[str, Any]:
     packet: dict[str, Any] = {
         "meta": {
-            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "captured_at": datetime.now(UTC).isoformat(),
             "lookback_minutes": lookback_minutes,
             "mode": mode,
             "session_path": session_path,
@@ -66,6 +66,7 @@ def _default_ask(mode: str) -> str:
 
 
 # ---- helpers used by callers / tests ---------------------------------------
+
 
 def trajectory_dict(traj: Trajectory) -> dict[str, Any]:
     return asdict(traj)

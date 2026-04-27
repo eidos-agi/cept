@@ -19,9 +19,7 @@ def test_cache_dir_respects_xdg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     assert hud_install.cache_dir() == tmp_path / "cept"
 
 
-def test_ensure_explicit_env_wins(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_ensure_explicit_env_wins(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     fake = tmp_path / "my-hud"
     fake.write_text("#!/bin/sh\nexit 0\n")
     fake.chmod(0o755)
@@ -40,16 +38,16 @@ def test_ensure_falls_back_to_path(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     fake.write_text("#!/bin/sh\nexit 0\n")
     fake.chmod(0o755)
 
-    monkeypatch.setattr(hud_install.shutil, "which", lambda name: str(fake) if name == "cept-hud" else None)
+    monkeypatch.setattr(
+        hud_install.shutil, "which", lambda name: str(fake) if name == "cept-hud" else None
+    )
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "no-cache-here"))
 
     resolved = hud_install.ensure(log=False)
     assert resolved == fake
 
 
-def test_ensure_uses_cache_when_present(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_ensure_uses_cache_when_present(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv("CEPT_HUD_BIN", raising=False)
     monkeypatch.setattr(hud_install.shutil, "which", lambda _: None)
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
@@ -63,9 +61,7 @@ def test_ensure_uses_cache_when_present(
     assert resolved == cache
 
 
-def test_ensure_returns_none_when_no_swift(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_ensure_returns_none_when_no_swift(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """No env var, no PATH binary, no cache, no swift compiler → None."""
     monkeypatch.delenv("CEPT_HUD_BIN", raising=False)
     monkeypatch.setattr(hud_install.shutil, "which", lambda _: None)
