@@ -78,41 +78,45 @@ def test_socket_adapter_writes_when_listener_present() -> None:
     sock_path = Path(sock_dir) / "t.sock"
     received: list[str] = []
     ready = threading.Event()
-    done = threading.Event()
 
     def server() -> None:
         srv = socketlib.socket(socketlib.AF_UNIX, socketlib.SOCK_STREAM)
         srv.bind(str(sock_path))
         srv.listen(1)
         ready.set()
-        conn, _ = srv.accept()
+        srv.settimeout(3.0)
         try:
-            buf = b""
-            while not done.is_set():
-                conn.settimeout(2.0)
+            conn, _ = srv.accept()
+        except (TimeoutError, OSError):
+            srv.close()
+            return
+        conn.settimeout(3.0)
+        buf = b""
+        try:
+            # Read until client closes (EOF) or read times out.
+            while True:
                 try:
                     chunk = conn.recv(4096)
-                except TimeoutError:
+                except (TimeoutError, OSError):
                     break
                 if not chunk:
                     break
                 buf += chunk
-            for line in buf.decode().splitlines():
-                if line.strip():
-                    received.append(line)
         finally:
             conn.close()
             srv.close()
+        for line in buf.decode().splitlines():
+            if line.strip():
+                received.append(line)
 
     t = threading.Thread(target=server, daemon=True)
     t.start()
-    assert ready.wait(2.0)
+    assert ready.wait(3.0)
 
     a = events.SocketAdapter(sock_path)
     a.emit(events.Event(run_id="r", seq=1, ts="t", phase="hello", msg="world"))
     a.close()
-    done.set()
-    t.join(2.0)
+    t.join(5.0)
 
     # Cleanup
     try:
