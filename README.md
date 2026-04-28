@@ -140,6 +140,10 @@ OPENROUTER_API_KEY=sk-or-... cept-cli --goal "fix oauth callback" --mode debug
 OPENROUTER_API_KEY=sk-or-... cept-cli --goal "..." --model "anthropic/claude-sonnet-4-5:online"
 ```
 
+## Examples
+
+- [01 — catching a guardrail violation before it shipped](examples/01-slack-eidos-personality.md): agent was about to write a persona before deploying the bot. Cept caught that this contradicted the project's own ship-simplest guardrails and surfaced two technical risks (socket-mode on Railway, non-swappable SYSTEM_PROMPT) the agent had missed.
+
 ## Design rules
 
 - **Redact before send.** Local secrets must never leave the machine.
