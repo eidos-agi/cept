@@ -14,6 +14,7 @@ from .repo_state import RepoState
 def build_packet(
     *,
     goal: str,
+    headline: str,
     mode: str,
     lookback_minutes: int,
     session_path: str,
@@ -27,6 +28,7 @@ def build_packet(
             "captured_at": datetime.now(UTC).isoformat(),
             "lookback_minutes": lookback_minutes,
             "mode": mode,
+            "headline": headline,
             "session_path": session_path,
             "cwd": trajectory.cwd or repo.cwd,
             "git_branch": trajectory.git_branch or repo.branch,

@@ -8,13 +8,14 @@ Coding agents loop. They polish corners while the center is wrong. They retry th
 
 When invoked (explicitly via "use cept" or by an agent that has reached a decision point):
 
-1. **Locate** the active Claude Code session JSONL under `~/.claude/projects/<dashed-cwd>/`.
-2. **Slice** the last N minutes of events (default 20).
-3. **Distill** raw events into a steering packet — decisions, attempts, errors, files touched, loops.
-4. **Collect** repo state — branch, dirty files, diff stat.
-5. **Redact** API keys, bearer tokens, env values, PEM blocks, emails, home paths.
-6. **Ask** an OpenRouter model (default `perplexity/sonar-reasoning` — reasoning + live web search) with a mode-specific prompt.
-7. **Return** a structured response: hypotheses, recommended next step, facts to verify, confidence.
+1. **Headline** the ask in 3-4 words — required, surfaced in the floating HUD callout so the human watching can see what's being asked at a glance.
+2. **Locate** the active Claude Code session JSONL under `~/.claude/projects/<dashed-cwd>/`.
+3. **Slice** the last N minutes of events (default 20).
+4. **Distill** raw events into a steering packet — decisions, attempts, errors, files touched, loops.
+5. **Collect** repo state — branch, dirty files, diff stat.
+6. **Redact** API keys, bearer tokens, env values, PEM blocks, emails, home paths.
+7. **Ask** an OpenRouter model (default `perplexity/sonar-reasoning` — reasoning + live web search) with a mode-specific prompt.
+8. **Return** a structured response: hypotheses, recommended next step, facts to verify, confidence — plus `refused: bool` if the model declined to engage.
 
 ## Modes
 
@@ -131,18 +132,31 @@ Then in a Claude Code session: "use cept — I'm stuck on the OAuth callback."
 
 ```bash
 # Distill the current session and print the redacted packet without calling OpenRouter:
-cept-cli --goal "fix oauth callback" --dry-run
+cept-cli --goal "fix oauth callback" --headline "fix oauth callback" --dry-run
 
 # Send for real:
-OPENROUTER_API_KEY=sk-or-... cept-cli --goal "fix oauth callback" --mode debug
+OPENROUTER_API_KEY=sk-or-... cept-cli --goal "fix oauth callback" \
+  --headline "fix oauth callback" --mode debug
 
 # Include source files for content-shape critique (not just trajectory):
 OPENROUTER_API_KEY=sk-or-... cept-cli --goal "audit this readme" \
+  --headline "audit research README" \
   --file research-findings/README.md --file checklist.md --mode debug
 
 # Try a different model:
-OPENROUTER_API_KEY=sk-or-... cept-cli --goal "..." --model "anthropic/claude-sonnet-4-5:online"
+OPENROUTER_API_KEY=sk-or-... cept-cli --goal "..." --headline "..." \
+  --model "anthropic/claude-sonnet-4-5:online"
 ```
+
+## Headline (required)
+
+Every cept call requires a `headline` — a 3-4 word newspaper-style summary of what's being asked. It surfaces in the floating HUD popup (so the human watching sees what's happening at a glance), in `packet.meta.headline` (so the model sees the agent's own self-summary alongside the longer goal), and in the return value (so the calling agent can confirm what got logged).
+
+- Soft cap: 4 words (warning emitted at 5)
+- Hard cap: 6 words (truncated with `…` at 7+)
+- Empty rejected: if the calling agent can't compress the ask to a phrase, it's not clear on what it needs — and that's exactly the moment cept was made for. The pause to write the headline IS part of cept's value.
+
+Examples: `"audit research README"`, `"debug oauth callback loop"`, `"compare Postgres vs SQLite"`, `"fix flaky test_distiller"`.
 
 ## Including source files in the packet
 

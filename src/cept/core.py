@@ -9,10 +9,34 @@ from typing import Any
 from . import distiller, events, keyfile, locator, openrouter, packet, repo_state
 from .files import collect_files, to_packet_field
 
+# Headline contract: the calling agent must compress its ask to ~3-4 words.
+# Soft cap (4) earns a warning; hard cap (6) truncates. The discipline is the
+# point — proprioception starts before the call, not after. See cept#5.
+HEADLINE_SOFT_CAP_WORDS = 4
+HEADLINE_HARD_CAP_WORDS = 6
+
+
+def _validate_headline(raw: str) -> tuple[str, str | None]:
+    """Return (cleaned, warning). Empty raises ValueError."""
+    cleaned = (raw or "").strip()
+    if not cleaned:
+        raise ValueError(
+            "headline is required — pass 3-4 words describing what you're asking. "
+            "If you can't compress the ask to a phrase, you're not clear on what you need."
+        )
+    words = cleaned.split()
+    if len(words) > HEADLINE_HARD_CAP_WORDS:
+        cleaned = " ".join(words[:HEADLINE_HARD_CAP_WORDS]) + "…"
+        return cleaned, f"headline truncated to {HEADLINE_HARD_CAP_WORDS} words"
+    if len(words) > HEADLINE_SOFT_CAP_WORDS:
+        return cleaned, f"headline is {len(words)} words; aim for {HEADLINE_SOFT_CAP_WORDS} or fewer"
+    return cleaned, None
+
 
 def run_cept(
     *,
     goal: str,
+    headline: str,
     cwd: str | Path | None = None,
     lookback_minutes: int | None = None,
     max_events: int = 250,
@@ -31,7 +55,14 @@ def run_cept(
     cwd = str(cwd or os.getcwd())
     em = emitter or events.Emitter()
 
-    em.emit("run.start", "cept run started", goal=goal, mode=mode, cwd=cwd)
+    headline, headline_warning = _validate_headline(headline)
+    # Fire the headline FIRST so the HUD has it before any other event lands —
+    # the popup shows what's being asked while the rest of the pipeline runs.
+    em.emit("request.headline", headline, headline=headline)
+    if headline_warning:
+        em.emit("request.headline.warn", headline_warning, level="warn")
+
+    em.emit("run.start", "cept run started", goal=goal, mode=mode, cwd=cwd, headline=headline)
 
     try:
         # ---- per-tree credentials and defaults --------------------------
@@ -111,6 +142,7 @@ def run_cept(
         with em.phase("redacting", "building redacted packet"):
             pkt = packet.build_packet(
                 goal=goal,
+                headline=headline,
                 mode=mode,
                 lookback_minutes=lookback_minutes,
                 session_path=str(location.path),
@@ -129,6 +161,7 @@ def run_cept(
         )
 
         result: dict[str, Any] = {
+            "headline": headline,
             "session": {
                 "path": str(location.path),
                 "session_id": location.session_id,

@@ -1,6 +1,6 @@
 [project]
 name = "cept"
-version = "0.3.0"
+version = "0.4.0"
 description = "Proprioception for coding agents — slice recent Claude Code transcript, redact, send to a model gateway, return structured steering guidance."
 readme = "README.md"
 requires-python = ">=3.11"
