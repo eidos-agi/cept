@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-29
+
 ### Added
 
 - **`files` parameter** on the `cept` MCP tool and `--file` flag on `cept-cli` — pass a list of paths and their content goes into the packet under `files`, so the model can quote and critique specific lines instead of only describing what the agent did. Caps: 50 KB/file, 256 KB total, 24 files max. Per-file truncation marker on overflow; binary files (NUL detected) are skipped with a note. System prompt updated to ask for `path:line-range` citations when files are present. Closes #2.
@@ -26,5 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Swift HUD** — translucent floating panel showing live cept progress. Auto-builds on first `--emit hud` use; cached at `~/.cache/cept/cept-hud`.
 - **MCP server (stdio)** and **`cept-cli`** — both wrap `core.run_cept` so the pipeline is shared.
 
-[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/eidos-agi/cept/releases/tag/v0.2.0
 [0.1.0]: https://github.com/eidos-agi/cept/releases/tag/v0.1.0
