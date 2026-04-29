@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-29
+
+### Added
+
+- **Refusal detection** — when the underlying model declines to engage with the packet (rather than recommending a substantive backtrack), cept now sets `refused: true` and `refusal_reason: "..."` on the response so the calling agent can switch on the difference. Previously a refusal looked structurally identical to substantive guidance — same `decision`, same `confidence`, same `hypotheses` shape — and callers acted on the refusal as if it were a real recommendation. Heuristics scan `recommended_next_step`, `summary`, and `hypotheses[].title/why` for refusal-shaped language. Closes #4.
+- **Owner-positive framing in the system prompt when `files` is attached** — when `packet.files` is non-empty, the user-payload preamble now states explicitly that the calling agent is the document owner asking for help hardening their own deliverable, so adversarial language ("audit", "red-team", "find the holes") doesn't get read as third-party attack prep. This kills the most common false-positive refusal seen in practice on `perplexity/sonar-pro`.
+
 ## [0.2.0] - 2026-04-29
 
 ### Added
@@ -28,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Swift HUD** — translucent floating panel showing live cept progress. Auto-builds on first `--emit hud` use; cached at `~/.cache/cept/cept-hud`.
 - **MCP server (stdio)** and **`cept-cli`** — both wrap `core.run_cept` so the pipeline is shared.
 
-[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/eidos-agi/cept/releases/tag/v0.3.0
 [0.2.0]: https://github.com/eidos-agi/cept/releases/tag/v0.2.0
 [0.1.0]: https://github.com/eidos-agi/cept/releases/tag/v0.1.0
