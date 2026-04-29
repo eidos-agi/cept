@@ -20,6 +20,7 @@ def build_packet(
     trajectory: Trajectory,
     repo: RepoState,
     question: str | None,
+    files: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     packet: dict[str, Any] = {
         "meta": {
@@ -53,6 +54,8 @@ def build_packet(
             "transcript_excerpt": trajectory.transcript_excerpt,
         },
     }
+    if files:
+        packet["files"] = files
     return redact_obj(packet)
 
 

@@ -101,10 +101,20 @@ def ask(
     mode = packet.get("meta", {}).get("mode", "steer")
     system = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["steer"])
 
+    has_files = bool(packet.get("files"))
+    files_note = (
+        " The packet's `files` field contains the verbatim content of "
+        "source files the agent wants critiqued. When you cite an issue "
+        "in a file, include the path and a line range (e.g. "
+        "`README.md:42-48`) so the agent can navigate directly to it."
+        if has_files
+        else ""
+    )
     user_payload = (
-        "Here is a redacted steering packet from the agent's recent trajectory. "
-        "Respond as JSON matching the requested schema.\n\n"
-        f"```json\n{json.dumps(packet, indent=2)}\n```"
+        "Here is a redacted steering packet from the agent's recent trajectory."
+        + files_note
+        + " Respond as JSON matching the requested schema.\n\n"
+        + f"```json\n{json.dumps(packet, indent=2)}\n```"
     )
 
     body: dict[str, Any] = {

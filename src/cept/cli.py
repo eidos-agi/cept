@@ -40,6 +40,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Two-way session verification nonce. When set, cept finds the JSONL whose recent tool_use input carries this id (and errors otherwise). Mostly relevant when called via MCP.",
     )
     parser.add_argument("--question", default=None)
+    parser.add_argument(
+        "--file",
+        action="append",
+        dest="files",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Source file to include in the packet so the model can quote and "
+            "critique specific lines. Repeatable. Caps: 50 KB/file, 256 KB total, "
+            "24 files max."
+        ),
+    )
     parser.add_argument("--no-repo-state", action="store_true")
     parser.add_argument("--no-diff", action="store_true")
     parser.add_argument(
@@ -84,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
             include_repo_state=not args.no_repo_state,
             include_diff=not args.no_diff,
             question=args.question,
+            files=args.files,
             dry_run=args.dry_run,
             model=args.model,
             emitter=emitter,
