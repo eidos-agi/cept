@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from . import distiller, events, keyfile, locator, openrouter, packet, repo_state
+from .files import collect_files, to_packet_field
 
 
 def run_cept(
@@ -21,6 +22,7 @@ def run_cept(
     include_repo_state: bool = True,
     include_diff: bool = True,
     question: str | None = None,
+    files: list[str] | None = None,
     dry_run: bool = False,
     api_key: str | None = None,
     model: str | None = None,
@@ -86,6 +88,25 @@ def run_cept(
                 else repo_state.RepoState(cwd=cwd)
             )
 
+        # ---- read caller-supplied source files --------------------------
+        file_entries = []
+        if files:
+            with em.phase(
+                "reading_files", f"reading {len(files)} source file(s)", count=len(files)
+            ):
+                file_entries = collect_files(files, cwd=cwd)
+            included = sum(1 for e in file_entries if e.content is not None)
+            truncated = sum(1 for e in file_entries if e.truncated)
+            errored = sum(1 for e in file_entries if e.error)
+            em.emit(
+                "files.read",
+                f"{included}/{len(file_entries)} files included",
+                requested=len(files),
+                included=included,
+                truncated=truncated,
+                errored=errored,
+            )
+
         # ---- redact + build packet --------------------------------------
         with em.phase("redacting", "building redacted packet"):
             pkt = packet.build_packet(
@@ -96,6 +117,7 @@ def run_cept(
                 trajectory=traj,
                 repo=repo,
                 question=question,
+                files=to_packet_field(file_entries) if file_entries else None,
             )
         em.emit(
             "packet.built",
@@ -103,6 +125,7 @@ def run_cept(
             files_touched=len(traj.files_touched),
             tool_failures=len(traj.tool_failures),
             loops_detected=len(traj.loops_detected),
+            files_included=sum(1 for e in file_entries if e.content is not None),
         )
 
         result: dict[str, Any] = {

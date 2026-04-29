@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`files` parameter** on the `cept` MCP tool and `--file` flag on `cept-cli` — pass a list of paths and their content goes into the packet under `files`, so the model can quote and critique specific lines instead of only describing what the agent did. Caps: 50 KB/file, 256 KB total, 24 files max. Per-file truncation marker on overflow; binary files (NUL detected) are skipped with a note. System prompt updated to ask for `path:line-range` citations when files are present. Closes #2.
+
 ## [0.1.0] - 2026-04-27
 
 ### Added

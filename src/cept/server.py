@@ -38,6 +38,7 @@ def cept(
     lookback_minutes: int | None = None,
     mode: str = "steer",
     question: str | None = None,
+    files: list[str] | None = None,
     session_id: str | None = None,
     include_repo_state: bool = True,
     include_diff: bool = True,
@@ -58,6 +59,12 @@ def cept(
     finds the JSONL whose tool_use input carries that exact id, confirming
     the file matches *this* call. Generate a new id every invocation.
 
+    INCLUDING SOURCE FILES: trajectory alone tells the model what the agent
+    *did*. To get content-shape critique (e.g. "this README claim is unsourced"
+    or "this function has a bounds bug"), pass ``files=[...]`` with the paths
+    you want audited. Each file is capped at 50 KB; total at 256 KB; max 24
+    files. Paths can be absolute or relative to cwd.
+
     Args:
         goal: What the agent is currently trying to accomplish.
         cept_id: A short (~10 char) random nonce. Must be unique per call.
@@ -68,6 +75,11 @@ def cept(
             to CEPT_LOOKBACK_MINUTES env (set via .ceptkey) or 20.
         mode: One of "steer" (default), "debug", "research", "architecture".
         question: Optional specific question to forward.
+        files: Optional list of file paths to include in the packet so the
+            model can quote and critique specific lines. Pass when you want
+            an adversarial content audit, not just a workflow critique.
+            Caps: 50 KB/file, 256 KB total, 24 files max. Redaction still
+            applies to file content.
         session_id: Optional explicit Claude Code session UUID (overrides cept_id).
         include_repo_state: Whether to attach git status/diff/branch.
         include_diff: Whether to include `git diff --stat`.
@@ -95,6 +107,7 @@ def cept(
             include_repo_state=include_repo_state,
             include_diff=include_diff,
             question=question,
+            files=files,
             model=model,
             cept_id=cept_id,
             emitter=emitter,

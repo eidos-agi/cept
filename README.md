@@ -136,9 +136,22 @@ cept-cli --goal "fix oauth callback" --dry-run
 # Send for real:
 OPENROUTER_API_KEY=sk-or-... cept-cli --goal "fix oauth callback" --mode debug
 
+# Include source files for content-shape critique (not just trajectory):
+OPENROUTER_API_KEY=sk-or-... cept-cli --goal "audit this readme" \
+  --file research-findings/README.md --file checklist.md --mode debug
+
 # Try a different model:
 OPENROUTER_API_KEY=sk-or-... cept-cli --goal "..." --model "anthropic/claude-sonnet-4-5:online"
 ```
+
+## Including source files in the packet
+
+By default, cept's packet describes *what the agent did* — tool calls, decisions, errors. Trajectory critique catches workflow problems but misses content problems ("this README quotes a statute that's actually from a summary page", "this function ignores its `null` branch"). Pass file paths to include their content in the packet:
+
+- **MCP**: `files=["README.md", "src/handler.py"]`
+- **CLI**: repeat `--file PATH`
+
+Each file is capped at 50 KB; total at 256 KB across all files; max 24 files per call. Truncated files keep the head and append a marker. Binary files (NUL byte detected) are skipped with a note. Paths can be absolute or relative to cwd. Redaction still applies to the file content. When files are present, the system prompt asks the model to cite issues as `path:line-range` so you can navigate directly to them.
 
 ## Examples
 
