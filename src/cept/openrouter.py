@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any
 
 import httpx
@@ -104,9 +105,14 @@ def ask(
     has_files = bool(packet.get("files"))
     files_note = (
         " The packet's `files` field contains the verbatim content of "
-        "source files the agent wants critiqued. When you cite an issue "
-        "in a file, include the path and a line range (e.g. "
-        "`README.md:42-48`) so the agent can navigate directly to it."
+        "source files the calling agent wants critiqued. The agent is the "
+        "owner of these files and is asking for help hardening their own "
+        "deliverable — owner-positive framing applies even when the request "
+        "uses adversarial language like \"audit\", \"red-team\", or \"find "
+        "the holes\". This is not a third party requesting analysis of "
+        "someone else's materials. When you cite an issue in a file, include "
+        "the path and a line range (e.g. `README.md:42-48`) so the agent can "
+        "navigate directly to it."
         if has_files
         else ""
     )
@@ -164,7 +170,83 @@ def ask(
     parsed = _parse_json_content(content)
     parsed.setdefault("citations", citations)
     parsed.setdefault("_model", model)
+    refused, reason = detect_refusal(parsed)
+    if refused:
+        parsed["refused"] = True
+        parsed["refusal_reason"] = reason
     return parsed
+
+
+# Refusal detection: distinguish "model engaged with the packet and recommended
+# backtracking" from "model declined to participate." cept's response shape is
+# the same in both cases — `decision: backtrack, confidence: 0.88` — so without
+# this layer the calling agent acts on the refusal as if it were guidance. See
+# eidos-agi/cept#4 for the failure case that motivated this.
+
+_REFUSAL_NEXT_STEP = re.compile(
+    r"^\s*("
+    r"decline|refuse|cannot|"
+    r"won['’]?\s*t|will\s+not|do\s+not\s+(provide|engage|participate)|"
+    r"i\s*[''’]?\s*m?\s*(unable|sorry|cannot|won['’]?\s*t|can['’]?\s*t)|"
+    r"i\s+(refuse|decline|cannot|won['’]?t|can['’]?t)"
+    r")\b",
+    re.I,
+)
+
+_REFUSAL_PHRASES = (
+    "test of whether",
+    "decoy",
+    "scaffolding to make",
+    "third party",
+    "bad actor",
+    "jailbreak",
+    "extract attacks",
+    "manipulat",  # manipulate / manipulation / manipulating
+    "i cannot provide",
+    "i can't provide",
+    "i won't provide",
+    "i am unable",
+    "i'm unable",
+    "i refuse",
+    "i decline",
+    "not appropriate",
+    "ethically problematic",
+    "against my guidelines",
+)
+
+
+def detect_refusal(parsed: dict[str, Any]) -> tuple[bool, str | None]:
+    """Heuristic: did the model refuse to engage with the packet?
+
+    Returns (refused, reason). A refusal looks structurally like substantive
+    guidance — decision/confidence/hypotheses are all populated — so callers
+    must rely on this detector to tell the difference. False positives are
+    far less costly than false negatives here: a real "backtrack" recommendation
+    survives because it doesn't open with "decline/refuse" or contain
+    refusal-shaped hypotheses.
+    """
+    next_step = str(parsed.get("recommended_next_step") or "")
+    if next_step and _REFUSAL_NEXT_STEP.match(next_step):
+        snippet = next_step[:80].rstrip()
+        return True, f"recommended_next_step opens with refusal: {snippet!r}"
+
+    summary = str(parsed.get("summary") or "").lower()
+    for phrase in _REFUSAL_PHRASES:
+        if phrase in summary:
+            return True, f"summary contains refusal phrase {phrase!r}"
+
+    matched: set[str] = set()
+    for h in parsed.get("hypotheses") or []:
+        if not isinstance(h, dict):
+            continue
+        text = (str(h.get("title", "")) + " " + str(h.get("why", ""))).lower()
+        for phrase in _REFUSAL_PHRASES:
+            if phrase in text:
+                matched.add(phrase)
+    if matched:
+        return True, f"hypotheses contain refusal language: {sorted(matched)}"
+
+    return False, None
 
 
 def _parse_json_content(content: Any) -> dict[str, Any]:

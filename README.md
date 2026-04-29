@@ -151,7 +151,23 @@ By default, cept's packet describes *what the agent did* — tool calls, decisio
 - **MCP**: `files=["README.md", "src/handler.py"]`
 - **CLI**: repeat `--file PATH`
 
-Each file is capped at 50 KB; total at 256 KB across all files; max 24 files per call. Truncated files keep the head and append a marker. Binary files (NUL byte detected) are skipped with a note. Paths can be absolute or relative to cwd. Redaction still applies to the file content. When files are present, the system prompt asks the model to cite issues as `path:line-range` so you can navigate directly to them.
+Each file is capped at 50 KB; total at 256 KB across all files; max 24 files per call. Truncated files keep the head and append a marker. Binary files (NUL byte detected) are skipped with a note. Paths can be absolute or relative to cwd. Redaction still applies to the file content. When files are present, the system prompt asks the model to cite issues as `path:line-range` so you can navigate directly to them, and frames the request as owner-self-review so adversarial language ("audit", "red-team") doesn't trip third-party-attack refusals.
+
+## Refusal detection
+
+When a model declines to engage with the packet (rather than recommending a substantive backtrack), the response shape is otherwise identical to real guidance — same `decision`, same `confidence`, same `hypotheses` keys. cept detects refusal-shaped language in the response and sets two extra top-level fields:
+
+```json
+{
+  "refused": true,
+  "refusal_reason": "recommended_next_step opens with refusal: 'Decline the request clearly'",
+  "decision": "backtrack",
+  "confidence": 0.88,
+  ...
+}
+```
+
+Switch on `refused` in the calling agent: if true, the audit didn't happen — try a different model (`model="anthropic/claude-sonnet-4-5:online"`) or reframe the goal. The default `perplexity/sonar-pro` over-refuses on owner-self-review of confidential corporate text; the layer-2 prompt fix above kills the most common false positive, and refusal detection catches the rest.
 
 ## Examples
 
