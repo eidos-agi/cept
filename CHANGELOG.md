@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-29
+
+### Changed (BREAKING)
+
+- **`headline` is now a required parameter** on the `cept` MCP tool and `--headline` is required on `cept-cli`. The calling agent must compress its ask to 3-4 words (soft cap 4, hard cap 6 — overflow is truncated, not rejected). The headline:
+  - Fires as a `request.headline` event at `seq=1`, before any other phase, so the floating HUD popup shows it the moment the call lands and keeps it visible for the rest of the run.
+  - Is embedded in `packet.meta.headline` so the model sees the agent's own self-summary alongside the longer goal — useful signal for catching when goal and headline drift apart (a sign of confused intent).
+  - Is returned at the top of the result so the calling agent can confirm what got logged.
+  Discipline-as-schema: if the calling agent can't compress the ask to 3-4 words, it's not clear on what it needs — exactly the moment cept was made for. The pause to write the headline IS part of cept's value. Existing call sites must add `headline=`; the validation error message names the contract.
+- **HUD callout** redesigned: prominent headline header (15 pt semibold) above the existing phase row (now 11 pt monospace, secondary). Panel height grew from 70 → 96 px to accommodate.
+
 ## [0.3.0] - 2026-04-29
 
 ### Added
@@ -35,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Swift HUD** — translucent floating panel showing live cept progress. Auto-builds on first `--emit hud` use; cached at `~/.cache/cept/cept-hud`.
 - **MCP server (stdio)** and **`cept-cli`** — both wrap `core.run_cept` so the pipeline is shared.
 
-[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/eidos-agi/cept/releases/tag/v0.4.0
 [0.3.0]: https://github.com/eidos-agi/cept/releases/tag/v0.3.0
 [0.2.0]: https://github.com/eidos-agi/cept/releases/tag/v0.2.0
 [0.1.0]: https://github.com/eidos-agi/cept/releases/tag/v0.1.0

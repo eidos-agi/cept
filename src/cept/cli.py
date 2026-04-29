@@ -20,6 +20,15 @@ def main(argv: list[str] | None = None) -> int:
         description="Distill recent Claude Code session and (optionally) ask OpenRouter for steering.",
     )
     parser.add_argument("--goal", required=True, help="What the agent is trying to accomplish.")
+    parser.add_argument(
+        "--headline",
+        required=True,
+        help=(
+            "3-4 word newspaper-headline summary of the ask. Surfaces in the "
+            "cept HUD callout and in the model's packet. Soft cap 4 words; "
+            "hard cap 6 (truncated). Example: \"audit research README\"."
+        ),
+    )
     parser.add_argument("--cwd", default=None, help="Working directory (default: current).")
     parser.add_argument(
         "--lookback",
@@ -87,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = run_cept(
             goal=args.goal,
+            headline=args.headline,
             cwd=args.cwd or os.getcwd(),
             lookback_minutes=args.lookback,
             max_events=args.max_events,
@@ -109,6 +119,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"openrouter error: {e}", file=sys.stderr)
         emitter.close()
         return 3
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        emitter.close()
+        return 4
     finally:
         emitter.close()
 

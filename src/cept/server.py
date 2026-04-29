@@ -34,6 +34,7 @@ def _emitter_from_env() -> events.Emitter:
 @mcp.tool()
 def cept(
     goal: str,
+    headline: str,
     cept_id: str | None = None,
     lookback_minutes: int | None = None,
     mode: str = "steer",
@@ -59,6 +60,16 @@ def cept(
     finds the JSONL whose tool_use input carries that exact id, confirming
     the file matches *this* call. Generate a new id every invocation.
 
+    HEADLINE (required): a 3-4 word phrase describing what you're asking,
+    in newspaper-headline style. Shows up in the floating HUD popup so the
+    human watching can see what's being asked at a glance, and lands in
+    the packet's `meta.headline` so the model sees your own self-summary
+    next to the longer goal. If you can't compress your ask to 3-4 words,
+    you're not clear on what you need — that's the moment cept was made
+    for, and the discipline of writing the headline IS part of the value.
+    Examples: "audit research README", "debug oauth callback loop",
+    "compare Postgres vs SQLite". Soft cap 4 words; hard cap 6.
+
     INCLUDING SOURCE FILES: trajectory alone tells the model what the agent
     *did*. To get content-shape critique (e.g. "this README claim is unsourced"
     or "this function has a bounds bug"), pass ``files=[...]`` with the paths
@@ -67,6 +78,9 @@ def cept(
 
     Args:
         goal: What the agent is currently trying to accomplish.
+        headline: 3-4 word newspaper-headline summary of the ask. Required.
+            Surfaces in the cept HUD callout and in the model's packet.
+            See the HEADLINE block above.
         cept_id: A short (~10 char) random nonce. Must be unique per call.
             When provided, cept verifies it appears in a recent tool_use
             input in exactly one JSONL — that's the calling session.
@@ -99,6 +113,7 @@ def cept(
     try:
         result = run_cept(
             goal=goal,
+            headline=headline,
             cwd=cwd,
             lookback_minutes=lookback_minutes,
             max_events=max_events,

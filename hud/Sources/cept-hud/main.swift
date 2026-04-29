@@ -31,6 +31,7 @@ struct CeptEvent: Decodable {
 // MARK: - State -------------------------------------------------------------
 
 final class HudState: ObservableObject {
+    @Published var headline: String = ""
     @Published var phase: String = "starting"
     @Published var msg: String = "cept is warming up…"
     @Published var level: String = "info"
@@ -39,6 +40,14 @@ final class HudState: ObservableObject {
     @Published var finished: Bool = false
 
     func apply(_ ev: CeptEvent) {
+        // The headline event is a one-shot: it sets the persistent header and
+        // does NOT overwrite the phase/msg row. All other events update the
+        // running phase/msg as before.
+        if ev.phase == "request.headline" {
+            self.headline = ev.msg
+            self.seq = ev.seq
+            return
+        }
         self.phase = ev.phase
         self.msg = ev.msg.isEmpty ? ev.phase : ev.msg
         self.level = ev.level
@@ -56,6 +65,13 @@ struct HudView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
+            if !state.headline.isEmpty {
+                Text(state.headline)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
             HStack(spacing: 8) {
                 Circle()
                     .fill(levelColor)
@@ -72,8 +88,8 @@ struct HudView: View {
                     .foregroundColor(.secondary)
             }
             Text(state.msg)
-                .font(.system(size: 13))
-                .foregroundColor(.primary)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
                 .lineLimit(2)
                 .truncationMode(.tail)
         }
@@ -117,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hosting = NSHostingView(rootView: view)
 
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 70),
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 96),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -136,7 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let screen = NSScreen.main {
             let r = screen.visibleFrame
             let x = r.maxX - 380 - 24
-            let y = r.maxY - 70 - 36
+            let y = r.maxY - 96 - 36
             panel.setFrameOrigin(NSPoint(x: x, y: y))
         }
         panel.orderFrontRegardless()
