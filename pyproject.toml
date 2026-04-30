@@ -1,6 +1,6 @@
 [project]
 name = "cept"
-version = "0.4.0"
+version = "0.4.1"
 description = "Proprioception for coding agents — slice recent Claude Code transcript, redact, send to a model gateway, return structured steering guidance."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -52,6 +52,12 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cept"]
+
+# Ship the Swift HUD source inside the wheel so a `uvx --from cept` install
+# can auto-build it on first `--emit hud` use. Without this, the wheel is
+# Python-only and the HUD silently falls back to noop. See cept#7.
+[tool.hatch.build.targets.wheel.force-include]
+"hud" = "cept/_hud_source"
 
 [tool.hatch.build.targets.sdist]
 include = [
