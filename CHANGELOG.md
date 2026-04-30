@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-30
+
+### Fixed
+
+- **Wheel now bundles the Swift HUD source** so `uvx --from cept` (and any PyPI install) can auto-build the floating popup on first `--emit hud` use. Previously the wheel was Python-only — `find_source_dir()` couldn't locate `hud/Package.swift`, `build()` failed silently, and the HUD adapter no-op'd. Marketplace plugin users got no popup. Bundled at `cept/_hud_source/` via hatchling `force-include`; resolver checks the bundled path first, then falls back to walking up for editable / source-checkout layouts.
+
 ## [0.4.0] - 2026-04-29
 
 ### Changed (BREAKING)
@@ -46,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Swift HUD** — translucent floating panel showing live cept progress. Auto-builds on first `--emit hud` use; cached at `~/.cache/cept/cept-hud`.
 - **MCP server (stdio)** and **`cept-cli`** — both wrap `core.run_cept` so the pipeline is shared.
 
-[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/eidos-agi/cept/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/eidos-agi/cept/releases/tag/v0.4.1
 [0.4.0]: https://github.com/eidos-agi/cept/releases/tag/v0.4.0
 [0.3.0]: https://github.com/eidos-agi/cept/releases/tag/v0.3.0
 [0.2.0]: https://github.com/eidos-agi/cept/releases/tag/v0.2.0

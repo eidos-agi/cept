@@ -14,6 +14,25 @@ def test_find_source_dir_returns_real_path() -> None:
     assert (src / "Package.swift").is_file()
 
 
+def test_find_source_dir_prefers_bundled_location(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Under a uvx/PyPI install the wheel ships hud/ as cept/_hud_source/.
+    The resolver should pick that over walking up to a sibling source tree."""
+    fake_pkg = tmp_path / "site-packages" / "cept"
+    fake_pkg.mkdir(parents=True)
+    (fake_pkg / "hud_install.py").write_text("# stub")
+    bundled = fake_pkg / "_hud_source"
+    bundled.mkdir()
+    (bundled / "Package.swift").write_text("// stub")
+
+    # Point the resolver at the fake package by patching __file__ via a
+    # module-level attribute on a copy of the function logic.
+    monkeypatch.setattr(hud_install, "__file__", str(fake_pkg / "hud_install.py"))
+    src = hud_install.find_source_dir()
+    assert src == bundled
+
+
 def test_cache_dir_respects_xdg(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     assert hud_install.cache_dir() == tmp_path / "cept"

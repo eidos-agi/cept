@@ -29,8 +29,20 @@ def cached_binary() -> Path:
 
 
 def find_source_dir() -> Path | None:
-    """Walk up from this file looking for ``hud/Package.swift``."""
+    """Locate the Swift HUD source.
+
+    Resolution order:
+      1. ``<package>/_hud_source/Package.swift`` — bundled in the wheel via
+         hatchling's force-include. This is the path used by ``uvx --from cept``
+         and any other PyPI install.
+      2. Walk up from this file for ``hud/Package.swift`` — the editable /
+         source-checkout layout (``cept/src/cept/hud_install.py`` ↔
+         ``cept/hud/Package.swift``).
+    """
     here = Path(__file__).resolve().parent
+    bundled = here / "_hud_source" / "Package.swift"
+    if bundled.is_file():
+        return bundled.parent
     for ancestor in [here, *here.parents]:
         candidate = ancestor / "hud" / "Package.swift"
         if candidate.is_file():
