@@ -109,13 +109,30 @@ Agentic tools get installed programmatically — bloated dependency trees mean s
 | License mention | References the license type |
 | Demo content | `demo/` directory exists with at least one asset (GIF, SVG, PNG). README embeds it above the fold. WARN if missing — repos with demos get ~42% more stars. |
 | Image URLs absolute | All `<img src=` and `![](` in README use absolute URLs (https://), not relative paths. Relative images break on PyPI, npm, and anywhere README is rendered outside GitHub. FAIL if relative paths found. Fix: use `https://raw.githubusercontent.com/{org}/{repo}/main/{path}`. |
+| Image targets resolve | For every README image URL, run a HEAD request or equivalent metadata check. FAIL if the asset is missing, private, too large for practical README rendering, or returns a non-2xx status. WARN if any above-fold image is >250KB; prefer optimized PNG/WebP/SVG assets. |
+| README/package consistency | Compare README install and deploy examples against current entry points in `pyproject.toml`. FAIL if README tells users to install or run a superseded tool. |
+| Example workflow consistency | Check files in `examples/` and README copy-paste workflows. FAIL if they contradict the product's stated path (for example, a CLI replacement whose examples still install the old official CLI). |
 
-### 8. Content Freshness
+### 8. Public Repository Metadata
+
+FOSS readiness includes the public index surface, not only files in git. Use `gh repo view <owner>/<repo> --json visibility,description,licenseInfo,repositoryTopics,url` when available.
+
+| Check | What to look for |
+|-------|-----------------|
+| Visibility | Public repos should match the forge manifest. FAIL if `.forge/manifest.yaml` says public but GitHub is private, or vice versa. |
+| Description | GitHub repository description is present, current, and matches the package positioning. WARN if empty. |
+| Topics | GitHub topics are current, discoverable, and not stale. FAIL if topics advertise removed surfaces such as `mcp` after an MCP server was removed. |
+| License detection | GitHub detects the license (`licenseInfo.spdxId`) and it matches `pyproject.toml`. WARN if LICENSE exists but GitHub does not detect it. |
+| Manifest drift | If `.forge/manifest.yaml` exists, compare declared visibility, topics, PyPI name, trusted publisher, README image policy, required files, and quality gates with observed repo/PyPI state. FAIL on drift that would mislead a release agent. |
+
+### 9. Content Freshness
 
 | Check | What to look for |
 |-------|-----------------|
 | CONTRIBUTING.md accuracy | If CONTRIBUTING.md mentions tools or dependencies (e.g., "we use click and rich"), verify they still exist in pyproject.toml. WARN if references are stale. |
 | Demo currency | If demo-script.sh exists, check for version strings and compare against pyproject.toml version. WARN if stale. |
+| Release-plan currency | Check docs such as `PYPI-PLAN.md`, `ship/README.md`, and release checklists against the current version and actual publish workflow. WARN if they mention obsolete versions; FAIL if they prescribe unsafe or wrong publish mechanics. |
+| Changelog/public docs alignment | If the changelog describes a fix that later changed again, ensure an Unreleased entry or corrected text exists. WARN if public docs and changelog tell conflicting stories. |
 
 ---
 
