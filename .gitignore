@@ -16,3 +16,4 @@ ceptkey
 hud/.build/
 hud/.swiftpm/
 hud/Package.resolved
+registry/cept-proofs/*.jsonl

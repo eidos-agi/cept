@@ -65,6 +65,8 @@ include = [
     "src/cept",
     "hud",
     "docs",
+    "registry",
+    "scripts",
     "tests",
     "README.md",
     "LICENSE",

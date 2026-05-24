@@ -1,21 +1,24 @@
 ---
 name: use-cept
-description: Use when the user asks to use cept, asks for outside-in steering, wants a Claude Code session reviewed, is stuck or looping, needs debugging triage, or wants architecture/research guidance from the recent agent trajectory. This skill tells Codex to call the local cept CLI or MCP tool first and treat cept output as evidence to reconcile.
+description: Use when the user asks to use Cept or cept, asks for outside-in steering, wants an agent session reviewed, is stuck or looping, needs debugging triage, or wants architecture/research guidance from the recent agent trajectory. This skill tells Codex to call the local Cept CLI or MCP tool first and treat Cept output as evidence to reconcile.
 ---
 
-# Use cept
+# Use Cept
 
-cept is proprioception for coding agents: a way for the AI to inspect its own
+Cept is proprioception for coding agents: a way for the AI to inspect its own
 recent work, uncertainty, and next move before continuing. Use it when the agent
 needs a deliberate outside-in review of its recent trajectory.
 
-cept is adapter-based at the transcript boundary. Claude Code is the default
+Cept is adapter-based at the transcript boundary. Claude Code is the default
 adapter, but any agent can use cept by writing agent-neutral JSONL and passing
 `--transcript`.
 
-cept's grounded default is `perplexity/sonar-pro` through OpenRouter. Use
+Cept's grounded default is `perplexity/sonar-pro` through OpenRouter. Use
 `OPENROUTER_API_KEY`; this plugin does not require or read `PERPLEXITY_API_KEY`.
 For keyfile setup and troubleshooting, read `docs/CEPTKEY.md` in the cept repo.
+
+The source-owned local plugin path follows the Conduit pattern:
+`/Users/dshanklinbv/plugins/cept -> /Users/dshanklinbv/repos-eidos-agi/cept`.
 
 ## Primary Rule
 
@@ -27,6 +30,8 @@ Useful entrypoints:
 cept-cli --help
 cept-keyfile show
 cept-keyfile where
+/Users/dshanklinbv/plugins/cept/scripts/cept-registry doctor
+/Users/dshanklinbv/plugins/cept/scripts/cept-registry registry --json
 cept-cli --goal "<goal>" --headline "<3-4 word headline>" --dry-run
 cept-cli --provider openrouter --goal "<goal>" --headline "<3-4 word headline>"
 cept-cli --goal "<goal>" --headline "<3-4 word headline>" --mode debug
@@ -39,15 +44,15 @@ cept-hud-install
 
 If the MCP tool is available, call the `cept` tool with a fresh session-verification nonce.
 
-## When To Use cept
+## When To Use Cept
 
-Use cept when:
+Use Cept when:
 
 - The agent is stuck, looping, or retrying the same fix.
 - A bug needs ranked likely causes from the recent transcript.
 - A design choice needs outside architecture review.
 - Current work depends on external facts or version gotchas.
-- The user explicitly says "use cept."
+- The user explicitly says "use Cept" or "use cept."
 
 ## Modes
 
@@ -58,11 +63,11 @@ Use cept when:
 
 ## Secret Boundary
 
-cept redacts before it sends, but it still packages recent transcript and optional file content. Use `--dry-run` first when the packet may contain sensitive material. Do not include secrets, private keys, raw tokens, protected personal data, or unrelated files.
+Cept redacts before it sends, but it still packages recent transcript and optional file content. Use `--dry-run` first when the packet may contain sensitive material. Do not include secrets, private keys, raw tokens, protected personal data, or unrelated files.
 
 ## Source-Of-Truth Rules
 
-- Treat cept output as evidence, not a verdict.
+- Treat Cept output as evidence, not a verdict.
 - Verify any concrete claim against local repo state or primary docs before shipping.
 - Keep the headline short. If you cannot summarize the ask in 3-4 words, clarify the goal first.
 - Prefer `--file` only for files that are directly relevant to the requested critique.
@@ -71,4 +76,4 @@ cept redacts before it sends, but it still packages recent transcript and option
 
 ## Plugin Boundary
 
-This plugin is a thin signpost to the `cept` CLI/MCP server. The CLI owns transcript discovery, redaction, OpenRouter calls, progress events, and HUD integration.
+This plugin is a thin signpost to the `cept` CLI/MCP server. The CLI owns transcript discovery, redaction, OpenRouter calls, progress events, and HUD integration. The source-owned registry under `registry/` documents Cept storage locations and stores local proof records.

@@ -1,8 +1,9 @@
-# cept — proprioception for coding agents
+# Cept — proprioception for coding agents
 
-> Short for *proprioception*. Cept is the agent's mirror.
+> Short for *proprioception*. Cept is the agent's mirror. The package,
+> executable, MCP tool, and Eidos slug remain lowercase `cept` for compatibility.
 
-Coding agents loop. They polish corners while the center is wrong. They retry the same fix three times instead of asking what they're missing. cept is a meta-tool that gives an agent a structured way to step back, look at its own recent trajectory, and request outside-in steering through OpenRouter, defaulting to a grounded Perplexity model.
+Coding agents loop. They polish corners while the center is wrong. They retry the same fix three times instead of asking what they're missing. Cept is a meta-tool that gives an agent a structured way to step back, look at its own recent trajectory, and request outside-in steering through OpenRouter, defaulting to a grounded Perplexity model.
 
 ## What it does
 
@@ -32,6 +33,39 @@ When invoked (explicitly via "use cept" or by an agent that has reached a decisi
 cd cept
 uv sync
 ```
+
+For local plugin-style discovery, Cept follows the same source-path pattern as
+Conduit:
+
+```text
+/Users/dshanklinbv/plugins/cept -> /Users/dshanklinbv/repos-eidos-agi/cept
+```
+
+The symlink is an operator convenience. The source repo remains the canonical
+home.
+
+## Registry And Storage
+
+Cept keeps a small source-owned registry like Conduit:
+
+```text
+registry/
+  storage.toml
+  cept-proofs/
+```
+
+Use it to inspect where Cept stores source, plugin shims, installed Eidos
+runtime state, event logs, proof records, and keyfiles:
+
+```bash
+scripts/cept-registry registry --json
+scripts/cept-registry doctor
+scripts/cept-registry proof --json
+```
+
+Runtime event logs still go to `~/.cept/status.jsonl` when `CEPT_EMIT` includes
+`file:~/.cept/status.jsonl`. Eidos loop evidence belongs under the active Eidos
+plugin run or docket evidence directory.
 
 ## Per-tree keys with `.ceptkey`
 
@@ -135,14 +169,14 @@ Then in a Claude Code session: "use cept — I'm stuck on the OAuth callback."
 
 ## Codex / Claude plugin
 
-cept ships a source-owned plugin wrapper for Codex and Claude Code:
+Cept ships a source-owned plugin wrapper for Codex and Claude Code:
 
 - `.codex-plugin/plugin.json` describes the Codex plugin card and points at the skill and MCP config.
 - `.claude-plugin/plugin.json` describes the Claude plugin.
 - `.mcp.json` starts the bounded MCP server from source with `uv run --directory ... cept`.
 - `skills/use-cept/SKILL.md` teaches agents when to call cept and how to respect the dry-run and secret boundaries.
 
-The plugin is intentionally thin. It points agents to the CLI/MCP surface; the CLI owns transcript discovery, redaction, OpenRouter calls, progress events, and HUD integration.
+The plugin is intentionally thin. It points agents to the CLI/MCP surface; the CLI owns transcript discovery, redaction, OpenRouter calls, progress events, and HUD integration. The registry documents source/runtime storage and records local proof checks.
 
 ## Agent transcript adapters
 

@@ -1,11 +1,11 @@
-# cept
+# Cept
 
 ## Goal
 
-Use cept as a deliberate proprioception pause for coding agents. The goal is to
+Use Cept as a deliberate proprioception pause for coding agents. The goal is to
 review the agent's recent trajectory, surface blind spots, and return a concrete
 next step without leaking secrets or treating outside guidance as a verdict.
-In plain terms, cept helps the AI inspect its own recent work, uncertainty, and
+In plain terms, Cept helps the AI inspect its own recent work, uncertainty, and
 next move before it continues.
 
 ## Inputs
@@ -26,6 +26,7 @@ next move before it continues.
    ```bash
    cept-keyfile show
    cept-cli --help
+   /Users/dshanklinbv/plugins/cept/scripts/cept-registry doctor
    ```
 
    For live calls, the environment or nearest `.ceptkey` must provide
@@ -65,14 +66,21 @@ next move before it continues.
    cept-cli --goal "<goal>" --headline "<headline>" --mode debug --file README.md
    ```
 
-5. To make cept assess cept itself, use the dogfood path:
+5. To make Cept assess Cept itself, use the dogfood path:
 
    ```bash
    cept-cli --self-assess --transcript /tmp/agent.jsonl --dry-run
    ```
 
-6. Reconcile cept's output with local evidence before acting. Verify concrete
+6. Reconcile Cept's output with local evidence before acting. Verify concrete
    claims against repo state, tests, logs, or primary documentation.
+
+7. For Conduit-style storage/proof checks, use the source-owned registry:
+
+   ```bash
+   /Users/dshanklinbv/plugins/cept/scripts/cept-registry registry --json
+   /Users/dshanklinbv/plugins/cept/scripts/cept-registry proof --json
+   ```
 
 ## What to produce
 
@@ -88,7 +96,7 @@ evidence directory:
 
 ## What good looks like
 
-- cept is used selectively at real uncertainty points, not as a default reflex.
+- Cept is used selectively at real uncertainty points, not as a default reflex.
 - The headline is short enough to prove the ask is clear.
 - Non-Claude agents use explicit JSONL transcript adapters instead of pretending
   to be Claude Code.

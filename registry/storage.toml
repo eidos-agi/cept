@@ -1,0 +1,49 @@
+[[stores]]
+id = "source"
+label = "Cept source checkout"
+kind = "source_repo"
+path = "/Users/dshanklinbv/repos-eidos-agi/cept"
+notes = "Canonical source-owned implementation. /Users/dshanklinbv/plugins/cept should point here."
+
+[[stores]]
+id = "plugin-shim"
+label = "Cept local plugin path"
+kind = "symlink"
+path = "/Users/dshanklinbv/plugins/cept"
+target = "/Users/dshanklinbv/repos-eidos-agi/cept"
+notes = "Conduit-style local plugin entrypoint for agents that expect plugins under /Users/dshanklinbv/plugins."
+
+[[stores]]
+id = "codex-cache"
+label = "Codex plugin cache"
+kind = "generated_bundle"
+path = "/Users/dshanklinbv/.codex/plugins/cache/eidos-agi/cept"
+notes = "Generated install/cache location. Do not edit as source."
+
+[[stores]]
+id = "eidos-global-plugin"
+label = "Eidos global plugin"
+kind = "installed_runtime"
+path = "/Users/dshanklinbv/.eidos/plugins/cept"
+notes = "Installed Eidos runtime plugin; refreshed from source eidos-plugin/cept."
+
+[[stores]]
+id = "event-log"
+label = "Cept progress event log"
+kind = "runtime_log"
+path = "~/.cept/status.jsonl"
+notes = "Optional event stream when CEPT_EMIT includes file:~/.cept/status.jsonl."
+
+[[stores]]
+id = "proofs"
+label = "Cept registry proofs"
+kind = "jsonl_proof_records"
+path = "registry/cept-proofs/"
+notes = "Local source-owned proof records written by scripts/cept-registry proof."
+
+[[stores]]
+id = "keyfiles"
+label = "Per-tree Cept keyfiles"
+kind = "walkup_config"
+path = ".ceptkey or ceptkey"
+notes = "Project-local provider/key/model metadata. Values override process env."

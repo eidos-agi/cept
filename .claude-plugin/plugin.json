@@ -19,6 +19,10 @@
     "steering"
   ],
   "skills": "./skills/",
+  "interface": {
+    "displayName": "Cept",
+    "shortDescription": "Give an AI proprioception over its recent work and next move."
+  },
   "mcpServers": {
     "cept": {
       "command": "uv",
