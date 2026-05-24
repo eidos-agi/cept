@@ -1,0 +1,80 @@
+[repo]
+style = "source-plus-marketplace plugin shipment"
+marketplace = "../eidos-marketplace"
+live_plugin = "cept"
+clean = true
+
+[gates]
+builtin = [
+  "git-clean-pushed",
+  "artifact-scan",
+  "python-tests",
+  "python-build",
+  "twine-check",
+  "wheel-install",
+  "entrypoints",
+  "codex-plugin-validator",
+  "felix-plugin-doctor",
+  "marketplace-check",
+  "eidos-plugin-show",
+  "eidos-plugin-run",
+  "post-clean-artifact-scan",
+]
+
+[artifacts]
+generated_names = [
+  ".venv",
+  "__pycache__",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".build",
+  "dist",
+  "build",
+]
+[evidence]
+auto_write = true
+path = ".eidos/ship/shipments"
+
+[learnings]
+yes = [
+  "Use OpenRouter-backed Perplexity as the live provider proof path.",
+  "Prove both source and marketplace bundle with marketplace_publish.py check.",
+  "Prove the installed Eidos plugin with eidos plugin show cept and eidos plugin run cept --json.",
+  "Prove package integrity with uv build, twine check, and clean wheel install version matching.",
+  "Keep runtime proof JSONL out of source and marketplace bundles.",
+]
+do_not = [
+  "Do not wire native PERPLEXITY_API_KEY routing unless Cept has a tested native provider path.",
+  "Do not claim shipment from source pytest alone; Cept has CLI, package, marketplace, and installed plugin surfaces.",
+  "Do not leave .venv, __pycache__, dist, build, or registry/cept-proofs JSONL in the checkout after shipment.",
+  "Do not assume the marketplace bundle updated unless marketplace_publish.py check passes.",
+  "Do not call Cept grounded unless the response reports _provider=openrouter and _model=perplexity/sonar-pro or another explicit grounded model.",
+]
+notes = [
+  "Cept keeps lowercase package, executable, MCP tool, and Eidos slug names for compatibility; human-facing copy may say Cept.",
+  "The source-owned shim path is /Users/dshanklinbv/plugins/cept -> /Users/dshanklinbv/repos-eidos-agi/cept.",
+]
+
+[[custom_gate]]
+id = "cept-guide"
+facet = "cli"
+command = "cept-cli --guide | grep -q '# ceptkey guide'"
+timeout = 30
+pass_detail = "cept-cli --guide prints the .ceptkey guide."
+fail_detail = "cept-cli --guide failed to expose the guide."
+
+[[custom_gate]]
+id = "cept-registry-doctor"
+facet = "registry"
+command = "scripts/cept-registry doctor"
+timeout = 60
+pass_detail = "Cept registry doctor passed from source."
+fail_detail = "Cept registry doctor failed."
+
+[[custom_gate]]
+id = "generic-transcript-dry-run"
+facet = "transcript-adapter"
+command = "tmp=$(mktemp /tmp/cept-agent.XXXXXX.jsonl); printf '%s\\n' '{\"timestamp\":\"2026-05-24T12:00:00+00:00\",\"role\":\"user\",\"text\":\"Need shipment proof.\",\"cwd\":\"/Users/dshanklinbv/repos-eidos-agi/cept\"}' '{\"timestamp\":\"2026-05-24T12:01:00+00:00\",\"type\":\"tool_call\",\"tool\":\"shell\",\"input\":\"pytest\"}' '{\"timestamp\":\"2026-05-24T12:02:00+00:00\",\"type\":\"tool_result\",\"content\":\"113 passed\"}' > \"$tmp\"; cept-cli --self-assess --dry-run --quiet --no-repo-state --no-diff --transcript \"$tmp\" --transcript-source file >/tmp/cept-ship-dry-run.json; rc=$?; rm -f \"$tmp\"; exit $rc"
+timeout = 60
+pass_detail = "Cept self-assess dry-run accepts a generic JSONL transcript."
+fail_detail = "Cept self-assess dry-run failed for a generic JSONL transcript."

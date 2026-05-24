@@ -1,0 +1,12 @@
+{
+  "id": "cept",
+  "name": "Cept",
+  "home": "/Users/dshanklinbv/repos-eidos-agi/cept",
+  "parent_id": null,
+  "members": [],
+  "active_forges": [
+    "ship",
+    "praxis"
+  ],
+  "created": "2026-05-24"
+}
