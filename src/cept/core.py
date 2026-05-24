@@ -1,4 +1,4 @@
-"""End-to-end pipeline: locate → distill → repo state → packet → (optional) OpenRouter."""
+"""End-to-end pipeline: load transcript → distill → repo state → packet → model."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from . import distiller, events, keyfile, locator, openrouter, packet, repo_state
+from . import adapters, distiller, events, keyfile, packet, providers, repo_state
 from .files import collect_files, to_packet_field
 
 # Headline contract: the calling agent must compress its ask to ~3-4 words.
@@ -41,6 +41,8 @@ def run_cept(
     lookback_minutes: int | None = None,
     max_events: int = 250,
     mode: str = "steer",
+    transcript: str | Path | None = None,
+    transcript_source: str = "auto",
     session_id: str | None = None,
     cept_id: str | None = None,
     include_repo_state: bool = True,
@@ -50,6 +52,7 @@ def run_cept(
     dry_run: bool = False,
     api_key: str | None = None,
     model: str | None = None,
+    provider: str | None = None,
     emitter: events.Emitter | None = None,
 ) -> dict[str, Any]:
     cwd = str(cwd or os.getcwd())
@@ -79,27 +82,39 @@ def run_cept(
 
         if lookback_minutes is None:
             lookback_minutes = _int_env("CEPT_LOOKBACK_MINUTES", 20)
-        if model is None:
-            model = os.environ.get("CEPT_DEFAULT_MODEL") or openrouter.DEFAULT_MODEL
+        selected_provider = providers.resolve_provider(
+            provider,
+            model,
+            api_key=api_key,
+            require_api_key=not dry_run,
+        )
 
-        # ---- locate active session JSONL --------------------------------
+        # ---- load active transcript -------------------------------------
         with em.phase(
             "locating",
-            "locating active Claude Code session",
+            "loading active transcript",
+            adapter=transcript_source,
             cept_id=cept_id,
         ):
-            location = locator.find_session(cwd=cwd, session_id=session_id, cept_id=cept_id)
+            loaded = adapters.load_transcript(
+                cwd=cwd,
+                transcript=transcript,
+                source=transcript_source,
+                session_id=session_id,
+                cept_id=cept_id,
+            )
         em.emit(
             "session.found",
-            location.path.name,
-            session_id=location.session_id,
-            discovery=location.source,
-            verified=(location.source == "cept_id"),
+            loaded.path.name,
+            adapter=loaded.adapter,
+            session_id=loaded.session_id,
+            discovery=loaded.source,
+            verified=(loaded.source == "cept_id"),
         )
 
         # ---- parse + filter ---------------------------------------------
-        with em.phase("parsing", "parsing JSONL events"):
-            all_events = distiller.parse_jsonl(location.path)
+        with em.phase("parsing", "normalizing transcript events"):
+            all_events = loaded.events
         with em.phase("filtering", f"filtering to last {lookback_minutes}m"):
             recent = distiller.filter_recent(all_events, lookback_minutes, max_events)
         em.emit(
@@ -145,7 +160,7 @@ def run_cept(
                 headline=headline,
                 mode=mode,
                 lookback_minutes=lookback_minutes,
-                session_path=str(location.path),
+                session_path=str(loaded.path),
                 trajectory=traj,
                 repo=repo,
                 question=question,
@@ -163,9 +178,10 @@ def run_cept(
         result: dict[str, Any] = {
             "headline": headline,
             "session": {
-                "path": str(location.path),
-                "session_id": location.session_id,
-                "discovery": location.source,
+                "adapter": loaded.adapter,
+                "path": str(loaded.path),
+                "session_id": loaded.session_id,
+                "discovery": loaded.source,
                 "events_in_window": len(recent),
                 "total_events": len(all_events),
             },
@@ -175,7 +191,8 @@ def run_cept(
                 "metadata": keyfile_result.metadata,
             },
             "config": {
-                "model": model,
+                "provider": selected_provider.name,
+                "model": selected_provider.model,
                 "lookback_minutes": lookback_minutes,
             },
             "packet": pkt,
@@ -187,8 +204,18 @@ def run_cept(
             return result
 
         # ---- consult model ---------------------------------------------
-        with em.phase("asking_model", f"asking {model}", model=model):
-            guidance = openrouter.ask(pkt, api_key=api_key, model=model)
+        with em.phase(
+            "asking_model",
+            f"asking {selected_provider.name}/{selected_provider.model}",
+            provider=selected_provider.name,
+            model=selected_provider.model,
+        ):
+            guidance = providers.ask(
+                pkt,
+                provider=selected_provider.name,
+                model=selected_provider.model,
+                api_key=selected_provider.api_key,
+            )
         em.emit(
             "guidance.received",
             "guidance returned",

@@ -18,6 +18,8 @@ def test_init_writes_metadata_and_body(tmp_path: Path) -> None:
             "cept-djs-01",
             "--key",
             "sk-or-test-abc",
+            "--provider",
+            "openrouter",
             "--model",
             "openai/gpt-5:online",
             "--lookback",
@@ -34,6 +36,7 @@ def test_init_writes_metadata_and_body(tmp_path: Path) -> None:
     assert target.exists()
     parsed = keyfile.parse_keyfile(target)
     assert parsed.values["OPENROUTER_API_KEY"] == "sk-or-test-abc"
+    assert parsed.values["CEPT_PROVIDER"] == "openrouter"
     assert parsed.values["CEPT_DEFAULT_MODEL"] == "openai/gpt-5:online"
     assert parsed.values["CEPT_LOOKBACK_MINUTES"] == "15"
     # Auto-populated metadata
@@ -94,3 +97,20 @@ def test_where_prints_path(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     assert rc == 0
     out = capsys.readouterr().out.strip()
     assert out == str(proj / ".ceptkey")
+
+
+def test_guide_prints_ceptkey_guide(capsys: pytest.CaptureFixture[str]) -> None:
+    rc = keyfile_cli.main(["guide"])
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "# ceptkey guide" in out
+    assert "CEPT_PROVIDER" in out
+
+
+def test_guide_path_prints_source_path(capsys: pytest.CaptureFixture[str]) -> None:
+    rc = keyfile_cli.main(["guide", "--path"])
+
+    assert rc == 0
+    out = capsys.readouterr().out.strip()
+    assert out.endswith("docs/CEPTKEY.md") or out == "(bundled guide resource)"

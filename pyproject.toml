@@ -58,11 +58,13 @@ packages = ["src/cept"]
 # Python-only and the HUD silently falls back to noop. See cept#7.
 [tool.hatch.build.targets.wheel.force-include]
 "hud" = "cept/_hud_source"
+"docs/CEPTKEY.md" = "cept/guides/CEPTKEY.md"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "src/cept",
     "hud",
+    "docs",
     "tests",
     "README.md",
     "LICENSE",

@@ -36,6 +36,8 @@ def cept(
     goal: str,
     headline: str,
     cept_id: str | None = None,
+    transcript: str | None = None,
+    transcript_source: str = "auto",
     lookback_minutes: int | None = None,
     mode: str = "steer",
     question: str | None = None,
@@ -45,20 +47,27 @@ def cept(
     include_diff: bool = True,
     max_events: int = 250,
     model: str | None = None,
+    provider: str | None = None,
 ) -> str:
     """Inspect the recent Claude Code transcript and return outside-in steering guidance.
 
     Use this when stuck, looping, or facing a low-confidence architectural choice.
-    The tool reads the active session JSONL, distills the last `lookback_minutes`
-    of events, redacts secrets, and asks an OpenRouter model (with web search)
-    for ranked guidance.
+    The tool reads the active agent transcript, distills the last
+    `lookback_minutes` of events, redacts secrets, and asks an OpenRouter model
+    (with web search) for ranked guidance.
 
-    SESSION VERIFICATION (important): if multiple Claude Code sessions are
+    TRANSCRIPT ADAPTERS: by default cept auto-locates the active Claude Code
+    session. For other agents, pass ``transcript`` with a JSONL file containing
+    normalized rows such as role/text messages, tool_call rows, and tool_result
+    rows. ``transcript_source`` may be "auto", "claude-code", or "file".
+
+    SESSION VERIFICATION (important): for Claude Code, if multiple sessions are
     open in the same project, mtime-based discovery can pick the wrong file.
-    For a deterministic two-way handshake, ALWAYS pass a fresh ``cept_id`` —
-    a 10-character random hex string — when invoking this tool. cept then
-    finds the JSONL whose tool_use input carries that exact id, confirming
-    the file matches *this* call. Generate a new id every invocation.
+    For a deterministic two-way handshake, pass a fresh ``cept_id`` — a
+    10-character random hex string — when invoking this tool. cept then finds
+    the JSONL whose tool_use input carries that exact id, confirming the file
+    matches *this* call. Generate a new id every invocation. This verification
+    is only available for the claude-code adapter.
 
     HEADLINE (required): a 3-4 word phrase describing what you're asking,
     in newspaper-headline style. Shows up in the floating HUD popup so the
@@ -84,7 +93,10 @@ def cept(
         cept_id: A short (~10 char) random nonce. Must be unique per call.
             When provided, cept verifies it appears in a recent tool_use
             input in exactly one JSONL — that's the calling session.
-            Skip only if you know there's just one session in this project.
+            Supported by the claude-code adapter.
+        transcript: Explicit JSONL transcript path for non-Claude agents or
+            for deterministic replay.
+        transcript_source: One of "auto", "claude-code", or "file".
         lookback_minutes: How far back to inspect (1–120). If None, falls back
             to CEPT_LOOKBACK_MINUTES env (set via .ceptkey) or 20.
         mode: One of "steer" (default), "debug", "research", "architecture".
@@ -101,6 +113,8 @@ def cept(
         model: OpenRouter model id. If None, falls back to CEPT_DEFAULT_MODEL
             env (set via .ceptkey) or "perplexity/sonar-pro". Append ":online"
             to any model name to force web search where supported.
+        provider: "auto" or "openrouter". This build uses OpenRouter as the
+            provider surface, with Perplexity Sonar as the default model.
     """
     cwd = os.getcwd()
     if lookback_minutes is not None:
@@ -118,12 +132,15 @@ def cept(
             lookback_minutes=lookback_minutes,
             max_events=max_events,
             mode=mode,
+            transcript=transcript,
+            transcript_source=transcript_source,
             session_id=session_id,
             include_repo_state=include_repo_state,
             include_diff=include_diff,
             question=question,
             files=files,
             model=model,
+            provider=provider,
             cept_id=cept_id,
             emitter=emitter,
         )

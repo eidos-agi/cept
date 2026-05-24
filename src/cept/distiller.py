@@ -1,4 +1,4 @@
-"""Distill raw Claude Code JSONL events into a steering packet."""
+"""Distill normalized agent transcript events into a steering packet."""
 
 from __future__ import annotations
 

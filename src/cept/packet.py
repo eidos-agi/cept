@@ -1,4 +1,4 @@
-"""Build the steering packet — the redacted artifact sent to Perplexity."""
+"""Build the steering packet — the redacted artifact sent to the model."""
 
 from __future__ import annotations
 

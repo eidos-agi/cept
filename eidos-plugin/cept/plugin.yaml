@@ -1,0 +1,24 @@
+slug: cept
+version: 0.4.1
+alias: cept
+description: |
+  Use cept when a coding agent is stuck, looping, low-confidence, or needs an
+  outside-in review of its recent agent trajectory. The plugin routes to
+  the CLI-first proprioception layer: dry-run sensitive packets, inspect the
+  nearest keyfile metadata, and call `cept-cli` or the bounded MCP server with
+  OpenRouter-backed Perplexity grounding only when the transcript packet is
+  appropriate to send.
+
+when_to_fire:
+  - "the user explicitly says to use cept"
+  - "a coding agent is stuck, looping, or retrying the same fix"
+  - "debugging needs ranked likely causes from recent transcript evidence"
+  - "architecture or research work needs outside-in steering"
+  - "the agent should inspect its own trajectory before continuing"
+
+owner_forge: research
+
+required_evidence:
+  - "evidence/cept-dry-run-summary.md"
+  - "evidence/cept-guidance.json"
+  - "evidence/cept-reconciliation.md"

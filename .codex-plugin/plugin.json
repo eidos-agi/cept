@@ -1,0 +1,49 @@
+{
+  "name": "cept",
+  "version": "0.4.1",
+  "description": "Proprioception for coding agents: slice recent Claude Code transcript, redact it, and ask for outside-in steering.",
+  "author": {
+    "name": "Eidos AGI",
+    "email": "daniel@eidosagi.com",
+    "url": "https://github.com/eidos-agi"
+  },
+  "homepage": "https://github.com/eidos-agi/cept",
+  "repository": "https://github.com/eidos-agi/cept",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "claude-code",
+    "codex",
+    "agent",
+    "proprioception",
+    "openrouter",
+    "steering"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "cept",
+    "shortDescription": "Ask an outside model to review the agent's recent trajectory.",
+    "longDescription": "cept gives Codex and Claude Code a deliberate pause point when the agent is stuck, looping, debugging, researching, or making an architectural choice. It locates the recent Claude Code transcript, distills the last few minutes of work, attaches repo state, redacts secrets, and asks an OpenRouter model for structured guidance.",
+    "developerName": "Eidos AGI",
+    "category": "Developer Tools",
+    "capabilities": [
+      "CLI",
+      "MCP",
+      "Claude Code Session Review",
+      "Debug Steering",
+      "Research Steering",
+      "Architecture Review",
+      "Secret Redaction"
+    ],
+    "websiteURL": "https://github.com/eidos-agi/cept",
+    "privacyPolicyURL": "https://github.com/eidos-agi/cept/blob/main/SECURITY.md",
+    "termsOfServiceURL": "https://github.com/eidos-agi/cept",
+    "defaultPrompt": [
+      "Use cept to review this stuck debugging loop.",
+      "Ask cept for outside-in architecture guidance.",
+      "Dry-run cept before sending a transcript packet."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

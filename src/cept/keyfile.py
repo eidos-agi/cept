@@ -13,6 +13,7 @@ which key is which without leaking values.
 
 Supported env keys:
 
+  CEPT_PROVIDER           "auto" or "openrouter" (default: auto)
   OPENROUTER_API_KEY      OpenRouter credential
   OPENROUTER_REFERER      optional, sent as HTTP-Referer
   OPENROUTER_TITLE        optional, sent as X-Title

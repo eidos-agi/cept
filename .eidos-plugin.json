@@ -1,0 +1,18 @@
+{
+  "kind": {
+    "type": "tool",
+    "signals": [
+      "single_capability",
+      "uvx_shim",
+      "mcp_server"
+    ]
+  },
+  "audit": {
+    "audited_by": "Felix plugin doctor + Codex plugin validator + marketplace MCP smoke test",
+    "audit_version": "STANDARD.md@2026-05-23",
+    "audit_date": "2026-05-23",
+    "grade": "A",
+    "next_audit": "2026-08-23",
+    "audit_doc": "AUDITS/cept.md"
+  }
+}

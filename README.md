@@ -2,7 +2,7 @@
 
 > Short for *proprioception*. Cept is the agent's mirror.
 
-Coding agents loop. They polish corners while the center is wrong. They retry the same fix three times instead of asking what they're missing. cept is a meta-tool that gives an agent a structured way to step back, look at its own recent trajectory, and request outside-in steering — through OpenRouter, defaulting to a model with web search baked in.
+Coding agents loop. They polish corners while the center is wrong. They retry the same fix three times instead of asking what they're missing. cept is a meta-tool that gives an agent a structured way to step back, look at its own recent trajectory, and request outside-in steering through OpenRouter, defaulting to a grounded Perplexity model.
 
 ## What it does
 
@@ -14,7 +14,7 @@ When invoked (explicitly via "use cept" or by an agent that has reached a decisi
 4. **Distill** raw events into a steering packet — decisions, attempts, errors, files touched, loops.
 5. **Collect** repo state — branch, dirty files, diff stat.
 6. **Redact** API keys, bearer tokens, env values, PEM blocks, emails, home paths.
-7. **Ask** an OpenRouter model (default `perplexity/sonar-reasoning` — reasoning + live web search) with a mode-specific prompt.
+7. **Ask** an OpenRouter model (default `perplexity/sonar-pro` — Perplexity grounding through OpenRouter) with a mode-specific prompt.
 8. **Return** a structured response: hypotheses, recommended next step, facts to verify, confidence — plus `refused: bool` if the model declined to engage.
 
 ## Modes
@@ -35,6 +35,8 @@ uv sync
 
 ## Per-tree keys with `.ceptkey`
 
+For the full guide, see [docs/CEPTKEY.md](docs/CEPTKEY.md).
+
 Drop a `.ceptkey` (preferred) or `ceptkey` file anywhere in your directory tree. Cept walks up from the working directory until it finds one, then loads it as dotenv. **The file overrides process env** — so if you have `OPENROUTER_API_KEY` exported in your shell but a `.ceptkey` in the project tree, the project key wins. That's the point: per-folder cost attribution and project-specific model defaults.
 
 Easiest way is to use the bundled scaffold:
@@ -44,7 +46,8 @@ cept-keyfile init \
   --service openrouter \
   --name cept-djs-01 \
   --key sk-or-... \
-  --model perplexity/sonar-reasoning \
+  --provider openrouter \
+  --model perplexity/sonar-pro \
   --scope "~/repos-eidos-agi/" \
   --notes "Eidos AGI shared key" \
   --path ~/repos-eidos-agi/.ceptkey
@@ -70,7 +73,8 @@ By hand it looks like:
 # cept-meta:notes=Eidos AGI shared key
 
 OPENROUTER_API_KEY=sk-or-clientA...
-CEPT_DEFAULT_MODEL=anthropic/claude-sonnet-4-5:online
+CEPT_PROVIDER=openrouter
+CEPT_DEFAULT_MODEL=perplexity/sonar-pro
 CEPT_LOOKBACK_MINUTES=10
 ```
 
@@ -82,6 +86,7 @@ Recognized keys:
 
 | Key | Effect |
 |-----|--------|
+| `CEPT_PROVIDER` | Provider selector. `auto` and `openrouter` both use OpenRouter in this build. |
 | `OPENROUTER_API_KEY` | OpenRouter credential. |
 | `OPENROUTER_REFERER` | Optional `HTTP-Referer` header for OpenRouter app rankings. |
 | `OPENROUTER_TITLE` | Optional `X-Title` header. |
@@ -92,16 +97,16 @@ Recognized keys:
 
 ## Model selection (via OpenRouter)
 
-cept uses [OpenRouter](https://openrouter.ai) as the gateway, so you can swap models without changing the client.
+cept uses [OpenRouter](https://openrouter.ai) as the gateway. Grounded Perplexity answers come from OpenRouter's Perplexity model slugs, not from a native `PERPLEXITY_API_KEY` path.
 
 | Model id | Why |
 |----------|-----|
-| `perplexity/sonar-reasoning` *(default)* | Reasoning + live web search. Best for `steer`/`debug`. |
-| `perplexity/sonar-pro` | Fast web search, no reasoning trace. |
+| `perplexity/sonar-pro` *(default)* | Fast grounded Perplexity answers through OpenRouter. |
+| `perplexity/sonar-reasoning-pro` | Reasoning-capable Perplexity model when you want deeper synthesis. |
 | `anthropic/claude-sonnet-4-5:online` | Claude with web search via OpenRouter (`:online` suffix). |
 | `openai/gpt-5:online` | GPT with web search. |
 
-Append `:online` to any compatible model name to force web search.
+Append `:online` to compatible non-Perplexity model names to request OpenRouter web search. Perplexity model slugs are already the preferred grounding path for cept.
 
 ## MCP server
 
@@ -128,6 +133,54 @@ The `OPENROUTER_TITLE` and `OPENROUTER_REFERER` env vars are optional — they s
 
 Then in a Claude Code session: "use cept — I'm stuck on the OAuth callback."
 
+## Codex / Claude plugin
+
+cept ships a source-owned plugin wrapper for Codex and Claude Code:
+
+- `.codex-plugin/plugin.json` describes the Codex plugin card and points at the skill and MCP config.
+- `.claude-plugin/plugin.json` describes the Claude plugin.
+- `.mcp.json` starts the bounded MCP server from source with `uv run --directory ... cept`.
+- `skills/use-cept/SKILL.md` teaches agents when to call cept and how to respect the dry-run and secret boundaries.
+
+The plugin is intentionally thin. It points agents to the CLI/MCP surface; the CLI owns transcript discovery, redaction, OpenRouter calls, progress events, and HUD integration.
+
+## Agent transcript adapters
+
+cept is adapter-based at the transcript boundary. The default adapter is
+`claude-code`, which keeps the original behavior of finding
+`~/.claude/projects/<dashed-cwd>/<session-id>.jsonl`. Other agents can use cept
+today by writing a JSONL transcript and passing `--transcript`:
+
+```bash
+cept-cli \
+  --goal "debug auth callback" \
+  --headline "debug auth callback" \
+  --transcript /tmp/agent-session.jsonl \
+  --dry-run
+```
+
+Minimal agent-neutral rows look like this:
+
+```jsonl
+{"timestamp":"2026-05-23T12:00:00+00:00","role":"user","text":"please fix the failing auth test","cwd":"/repo"}
+{"timestamp":"2026-05-23T12:01:00+00:00","type":"tool_call","tool":"shell","input":{"command":"pytest tests/test_auth.py"}}
+{"timestamp":"2026-05-23T12:02:00+00:00","type":"tool_result","is_error":true,"content":"AssertionError: callback missing state"}
+```
+
+The normalized event vocabulary is intentionally small: user/assistant messages,
+tool calls, and tool results. New agent adapters should normalize into that
+shape early so the distiller, redactor, provider clients, and reducers do not
+need to know which agent produced the transcript.
+
+For dogfooding, use:
+
+```bash
+cept-cli --self-assess --transcript /tmp/agent-session.jsonl --dry-run
+```
+
+`--self-assess` switches to architecture mode, supplies a cept-specific goal and
+headline, and includes cept's core source files in the packet.
+
 ## CLI (dry-run / debugging)
 
 ```bash
@@ -137,6 +190,10 @@ cept-cli --goal "fix oauth callback" --headline "fix oauth callback" --dry-run
 # Send for real:
 OPENROUTER_API_KEY=sk-or-... cept-cli --goal "fix oauth callback" \
   --headline "fix oauth callback" --mode debug
+
+# Be explicit about the provider:
+OPENROUTER_API_KEY=sk-or-... cept-cli --provider openrouter \
+  --goal "fix oauth callback" --headline "fix oauth callback"
 
 # Include source files for content-shape critique (not just trajectory):
 OPENROUTER_API_KEY=sk-or-... cept-cli --goal "audit this readme" \
@@ -250,8 +307,8 @@ For the MCP server (where stdout is the JSON-RPC channel and must stay clean), s
   "ts": "2026-04-27T20:00:00.000Z",
   "phase": "asking_model",
   "level": "info",
-  "msg": "asking perplexity/sonar-reasoning",
-  "data": {"model": "perplexity/sonar-reasoning"}
+  "msg": "asking perplexity/sonar-pro",
+  "data": {"model": "perplexity/sonar-pro", "provider": "openrouter"}
 }
 ```
 

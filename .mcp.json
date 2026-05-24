@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "cept": {
+      "transport": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/dshanklinbv/repos-eidos-agi/cept",
+        "cept"
+      ],
+      "env": {
+        "CEPT_EMIT": "hud,file:~/.cept/status.jsonl"
+      },
+      "tool_timeout_sec": 600
+    }
+  }
+}

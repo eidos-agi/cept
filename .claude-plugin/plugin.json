@@ -1,0 +1,36 @@
+{
+  "name": "cept",
+  "version": "0.4.1",
+  "description": "Proprioception for coding agents: slice recent Claude Code transcript, redact it, and ask for outside-in steering.",
+  "author": {
+    "name": "Eidos AGI",
+    "url": "https://github.com/eidos-agi"
+  },
+  "homepage": "https://github.com/eidos-agi/cept",
+  "repository": "https://github.com/eidos-agi/cept",
+  "license": "MIT",
+  "category": "agent-tools",
+  "keywords": [
+    "mcp",
+    "claude-code",
+    "agent",
+    "proprioception",
+    "openrouter",
+    "steering"
+  ],
+  "skills": "./skills/",
+  "mcpServers": {
+    "cept": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "cept"
+      ],
+      "env": {
+        "CEPT_EMIT": "hud,file:~/.cept/status.jsonl"
+      }
+    }
+  }
+}

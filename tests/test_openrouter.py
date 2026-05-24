@@ -140,20 +140,39 @@ def test_detect_refusal_next_step_match_anchors_at_start() -> None:
     assert refused is False
 
 
-def test_files_note_is_present_in_user_payload_when_files_attached() -> None:
-    """When packet.files is non-empty, the user-payload preamble carries the
-    owner-positive framing — that's the layer-2 fix from cept#4."""
-    # We exercise the prompt-building path indirectly by hitting the same
-    # has_files branch the production code does. Keep this test lightweight:
-    # the actual httpx call is out of scope, we just assert the string the
-    # production path would assemble.
+def test_build_request_body_is_evidence_bound_and_schema_constrained() -> None:
+    body = openrouter.build_request_body({"meta": {"mode": "debug"}})
+
+    system = body["messages"][0]["content"]
+    user = body["messages"][1]["content"]
+
+    assert "proprioception" in system
+    assert "recent work, trajectory, uncertainty, and next move" in system
+    assert "Stay evidence-bound" in system
+    assert "too thin" in system
+    assert "disconfirm" in system
+    assert "Use the packet as evidence, not as a script" in user
+    assert body["response_format"]["json_schema"]["strict"] is True
+    assert body["response_format"]["json_schema"]["schema"] is openrouter.RESPONSE_SCHEMA
+
+
+def test_build_request_body_includes_file_citation_instruction_only_when_files_attached() -> None:
     packet_with_files = {
         "meta": {"mode": "steer"},
         "files": {"README.md": {"content": "x"}},
     }
     packet_without = {"meta": {"mode": "steer"}}
 
-    has_files_yes = bool(packet_with_files.get("files"))
-    has_files_no = bool(packet_without.get("files"))
-    assert has_files_yes is True
-    assert has_files_no is False
+    user_with = openrouter.build_request_body(packet_with_files)["messages"][1]["content"]
+    user_without = openrouter.build_request_body(packet_without)["messages"][1]["content"]
+
+    assert "path and line range" in user_with
+    assert "path and line range" not in user_without
+
+
+def test_build_request_body_falls_back_to_steer_for_unknown_mode() -> None:
+    body = openrouter.build_request_body({"meta": {"mode": "weird"}})
+
+    system = body["messages"][0]["content"]
+    assert "Mode: weird" in system
+    assert "blind spots" in system

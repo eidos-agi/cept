@@ -1,10 +1,8 @@
 """OpenRouter client — sends the redacted steering packet, returns structured guidance.
 
 OpenRouter exposes an OpenAI-compatible chat-completions endpoint that routes to
-many backends, so cept can pick a model with web search built in (Perplexity's
-sonar family) without locking the user to a single provider. Default is
-``perplexity/sonar-reasoning`` — same outside-in flavor that justified cept's
-design, just routed through OpenRouter.
+many backends, so cept can use Perplexity's grounded Sonar family through one
+stable provider surface. Default is ``perplexity/sonar-pro``.
 
 Append ``:online`` to any model name to force web search on backends that
 support it (e.g. ``anthropic/claude-sonnet-4-5:online``).
@@ -23,23 +21,32 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "perplexity/sonar-pro"
 
 
-SYSTEM_PROMPTS = {
+BASE_SYSTEM_PROMPT = (
+    "You are helping an AI coding agent with proprioception: a grounded sense "
+    "of its own recent work, trajectory, uncertainty, and next move. You are "
+    "reviewing a redacted work packet from that agent. "
+    "Stay evidence-bound: separate what the packet shows from what you infer, "
+    "and say when evidence is too thin. Do not assume the agent is looping, "
+    "wrong, or safe to continue unless the packet supports it. Prefer concrete "
+    "next checks over generic advice. Return only JSON matching the requested schema."
+)
+
+MODE_INSTRUCTIONS = {
     "steer": (
-        "You are a senior staff engineer acting as the proprioceptive steering module for a coding agent. "
-        "The agent has shared its recent trajectory. Your job: surface blind spots and propose the single best next move. "
-        "Be specific. Cite docs when relevant. Avoid generic advice."
+        "Look for blind spots, missing verification, stale assumptions, and better next checks. "
+        "Recommend one next step, but include uncertainty through confidence and facts_to_verify."
     ),
     "debug": (
-        "You are a senior debugger. Rank the most likely root causes from the evidence, then propose the single "
-        "highest-leverage next experiment. If the agent appears to be in a loop, say so explicitly."
+        "Rank plausible root causes from the observed evidence. Prefer experiments that would "
+        "disconfirm the leading hypothesis quickly."
     ),
     "research": (
-        "You are a research assistant. Find external facts, version gotchas, and authoritative docs relevant to the agent's work. "
-        "Prefer primary sources. Return citations."
+        "Identify external facts, docs, release/version issues, and citations relevant to the work. "
+        "Prefer primary sources and mark any unsupported claim as something to verify."
     ),
     "architecture": (
-        "You are a principal engineer reviewing an in-flight design choice. Compare alternatives, surface tradeoffs the agent has not "
-        "considered, and recommend a direction with explicit reasoning."
+        "Compare viable design alternatives and their tradeoffs. Call out missing constraints, "
+        "migration risk, and reversibility."
     ),
 }
 
@@ -99,45 +106,7 @@ def ask(
     if not api_key:
         raise OpenRouterError("OPENROUTER_API_KEY not set.")
 
-    mode = packet.get("meta", {}).get("mode", "steer")
-    system = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["steer"])
-
-    has_files = bool(packet.get("files"))
-    files_note = (
-        " The packet's `files` field contains the verbatim content of "
-        "source files the calling agent wants critiqued. The agent is the "
-        "owner of these files and is asking for help hardening their own "
-        "deliverable — owner-positive framing applies even when the request "
-        "uses adversarial language like \"audit\", \"red-team\", or \"find "
-        "the holes\". This is not a third party requesting analysis of "
-        "someone else's materials. When you cite an issue in a file, include "
-        "the path and a line range (e.g. `README.md:42-48`) so the agent can "
-        "navigate directly to it."
-        if has_files
-        else ""
-    )
-    user_payload = (
-        "Here is a redacted steering packet from the agent's recent trajectory."
-        + files_note
-        + " Respond as JSON matching the requested schema.\n\n"
-        + f"```json\n{json.dumps(packet, indent=2)}\n```"
-    )
-
-    body: dict[str, Any] = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user_payload},
-        ],
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "cept_guidance",
-                "strict": True,
-                "schema": RESPONSE_SCHEMA,
-            },
-        },
-    }
+    body = build_request_body(packet, model=model)
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -175,6 +144,43 @@ def ask(
         parsed["refused"] = True
         parsed["refusal_reason"] = reason
     return parsed
+
+
+def build_request_body(packet: dict[str, Any], *, model: str = DEFAULT_MODEL) -> dict[str, Any]:
+    mode = str(packet.get("meta", {}).get("mode") or "steer")
+    mode_instruction = MODE_INSTRUCTIONS.get(mode, MODE_INSTRUCTIONS["steer"])
+    system = f"{BASE_SYSTEM_PROMPT} Mode: {mode}. {mode_instruction}"
+
+    files_note = (
+        "\n\nThe packet includes source files supplied by the calling agent for self-review. "
+        "When citing file-specific issues, include path and line range where possible."
+        if packet.get("files")
+        else ""
+    )
+    user_payload = (
+        "Review this redacted cept packet. Use the packet as evidence, not as a script. "
+        "If the packet lacks enough signal, say so in the summary and make the next step a "
+        "verification step."
+        + files_note
+        + "\n\n"
+        + f"```json\n{json.dumps(packet, indent=2)}\n```"
+    )
+
+    return {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_payload},
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "cept_guidance",
+                "strict": True,
+                "schema": RESPONSE_SCHEMA,
+            },
+        },
+    }
 
 
 # Refusal detection: distinguish "model engaged with the packet and recommended

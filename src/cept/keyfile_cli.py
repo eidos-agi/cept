@@ -4,6 +4,7 @@ Subcommands:
   init    Write a new .ceptkey with auto-populated provenance metadata.
   show    Print metadata of the nearest .ceptkey (no values — safe to share).
   where   Print the path of the nearest .ceptkey.
+  guide   Print the .ceptkey setup and troubleshooting guide.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from . import keyfile
+from . import guides, keyfile
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -33,6 +34,12 @@ def main(argv: list[str] | None = None) -> int:
     init_p.add_argument("--key", required=True, help="The OPENROUTER_API_KEY value.")
     init_p.add_argument(
         "--env-var", default="OPENROUTER_API_KEY", help="Env var name to write the key under."
+    )
+    init_p.add_argument(
+        "--provider",
+        choices=("auto", "openrouter"),
+        default=None,
+        help="Sets CEPT_PROVIDER. This build routes Perplexity models through OpenRouter.",
     )
     init_p.add_argument("--model", default=None, help="Sets CEPT_DEFAULT_MODEL.")
     init_p.add_argument("--lookback", type=int, default=None, help="Sets CEPT_LOOKBACK_MINUTES.")
@@ -56,6 +63,13 @@ def main(argv: list[str] | None = None) -> int:
     where_p = sub.add_parser("where", help="Print path of nearest .ceptkey.")
     where_p.add_argument("--cwd", default=None)
 
+    guide_p = sub.add_parser("guide", help="Print the .ceptkey guide.")
+    guide_p.add_argument(
+        "--path",
+        action="store_true",
+        help="Print the source guide path when available instead of guide contents.",
+    )
+
     args = parser.parse_args(argv)
 
     if args.cmd == "init":
@@ -64,6 +78,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_show(args)
     if args.cmd == "where":
         return _cmd_where(args)
+    if args.cmd == "guide":
+        return _cmd_guide(args)
     return 2
 
 
@@ -92,6 +108,8 @@ def _cmd_init(args: argparse.Namespace) -> int:
         meta_lines.append(f"# cept-meta:notes={args.notes}")
 
     body_lines = [f"{args.env_var}={args.key}"]
+    if args.provider:
+        body_lines.append(f"CEPT_PROVIDER={args.provider}")
     if args.model:
         body_lines.append(f"CEPT_DEFAULT_MODEL={args.model}")
     if args.lookback is not None:
@@ -147,6 +165,15 @@ def _cmd_where(args: argparse.Namespace) -> int:
         print("(no .ceptkey found in walk-up)", file=sys.stderr)
         return 1
     print(path)
+    return 0
+
+
+def _cmd_guide(args: argparse.Namespace) -> int:
+    if args.path:
+        path = guides.guide_path("ceptkey")
+        print(path if path else "(bundled guide resource)")
+    else:
+        print(guides.read_guide("ceptkey"), end="")
     return 0
 
 
