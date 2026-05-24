@@ -118,9 +118,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--guide",
+        nargs="?",
+        const="ceptkey",
         choices=["ceptkey"],
         default=None,
-        help="Print a built-in guide and exit. Use 'ceptkey' for .ceptkey setup and troubleshooting.",
+        help="Print a built-in guide and exit. Defaults to 'ceptkey' for .ceptkey setup and troubleshooting.",
     )
     parser.add_argument(
         "--guide-path",

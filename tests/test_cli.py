@@ -49,6 +49,15 @@ def test_cli_guide_prints_ceptkey_guide_without_goal(capsys) -> None:
     assert "OPENROUTER_API_KEY" in out
 
 
+def test_cli_guide_defaults_to_ceptkey(capsys) -> None:
+    code = cli.main(["--guide"])
+
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "# ceptkey guide" in out
+    assert "OPENROUTER_API_KEY" in out
+
+
 def test_cli_guide_path_prints_source_path(capsys) -> None:
     code = cli.main(["--guide", "ceptkey", "--guide-path"])
 
