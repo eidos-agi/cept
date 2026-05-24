@@ -1,0 +1,440 @@
+{
+  "ok": true,
+  "repo": "/Users/dshanklinbv/repos-eidos-agi/cept",
+  "manifest": "/Users/dshanklinbv/repos-eidos-agi/cept/.eidos/ship/manifest.toml",
+  "shipment_style": "source-plus-marketplace plugin shipment",
+  "facets": [
+    "cli",
+    "codex-plugin",
+    "eidos-plugin",
+    "marketplace",
+    "python-package",
+    "workspace"
+  ],
+  "project": {
+    "name": "cept",
+    "scripts": [
+      "cept",
+      "cept-cli",
+      "cept-hud-install",
+      "cept-keyfile"
+    ]
+  },
+  "do_not": [
+    "Do not wire native PERPLEXITY_API_KEY routing unless Cept has a tested native provider path.",
+    "Do not claim shipment from source pytest alone; Cept has CLI, package, marketplace, and installed plugin surfaces.",
+    "Do not leave .venv, __pycache__, dist, build, or registry/cept-proofs JSONL in the checkout after shipment.",
+    "Do not assume the marketplace bundle updated unless marketplace_publish.py check passes.",
+    "Do not call Cept grounded unless the response reports _provider=openrouter and _model=perplexity/sonar-pro or another explicit grounded model."
+  ],
+  "yes": [
+    "Use OpenRouter-backed Perplexity as the live provider proof path.",
+    "Prove both source and marketplace bundle with marketplace_publish.py check.",
+    "Prove the installed Eidos plugin with eidos plugin show cept and eidos plugin run cept --json.",
+    "Prove package integrity with uv build, twine check, and clean wheel install version matching.",
+    "Keep runtime proof JSONL out of source and marketplace bundles."
+  ],
+  "notes": [
+    "Cept keeps lowercase package, executable, MCP tool, and Eidos slug names for compatibility; human-facing copy may say Cept.",
+    "The source-owned shim path is /Users/dshanklinbv/plugins/cept -> /Users/dshanklinbv/repos-eidos-agi/cept."
+  ],
+  "gates": [
+    {
+      "id": "git-clean-pushed",
+      "facet": "workspace",
+      "status": "pass",
+      "ok": true,
+      "detail": "Clean and synced.",
+      "command": null,
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": null,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "duration_seconds": null,
+      "artifacts": [],
+      "data": {
+        "path": "/Users/dshanklinbv/repos-eidos-agi/cept",
+        "kind": "git",
+        "ok": true,
+        "status": "ok",
+        "branch": "main",
+        "head": "fa4e1a2",
+        "upstream": "origin/main",
+        "ahead": 0,
+        "behind": 0,
+        "clean": true,
+        "modified_count": 0,
+        "untracked_count": 0,
+        "examples": [],
+        "detail": "Clean and synced."
+      }
+    },
+    {
+      "id": "pre-clean-artifact-scan",
+      "facet": "workspace",
+      "status": "pass",
+      "ok": true,
+      "detail": "Generated artifacts were found before shipment and cleaned before gates ran.",
+      "command": null,
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": null,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "duration_seconds": null,
+      "artifacts": [
+        "src/cept/__pycache__"
+      ],
+      "data": {}
+    },
+    {
+      "id": "python-tests",
+      "facet": "python-package",
+      "status": "pass",
+      "ok": true,
+      "detail": "Python test suite passed.",
+      "command": [
+        "uv",
+        "run",
+        "--extra",
+        "dev",
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "........................................................................ [ 63%]\n.........................................                                [100%]\n113 passed in 8.84s",
+      "stderr_tail": "",
+      "duration_seconds": 9.504,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "python-build",
+      "facet": "python-package",
+      "status": "pass",
+      "ok": true,
+      "detail": "Wheel and source distribution build completed.",
+      "command": [
+        "uv",
+        "build"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "Building source distribution...\nBuilding wheel from source distribution...\nSuccessfully built dist/cept-0.4.1.tar.gz\nSuccessfully built dist/cept-0.4.1-py3-none-any.whl",
+      "duration_seconds": 0.804,
+      "artifacts": [
+        "dist/.gitignore",
+        "dist/cept-0.4.1-py3-none-any.whl",
+        "dist/cept-0.4.1.tar.gz"
+      ],
+      "data": {}
+    },
+    {
+      "id": "twine-check",
+      "facet": "python-package",
+      "status": "pass",
+      "ok": true,
+      "detail": "Distribution metadata passed twine check.",
+      "command": [
+        "uvx",
+        "twine",
+        "check",
+        "dist/*"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "Checking dist/cept-0.4.1-py3-none-any.whl: PASSED\nChecking dist/cept-0.4.1.tar.gz: PASSED",
+      "stderr_tail": "",
+      "duration_seconds": 0.577,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "wheel-install",
+      "facet": "python-package",
+      "status": "pass",
+      "ok": true,
+      "detail": "Installed package runtime version matches metadata.",
+      "command": [
+        "/var/folders/x_/j3nb_xdn5pq2845d4xsd_rn80000gn/T/eidos-ship-wheel-t9k84hqw/bin/python",
+        "-m",
+        "pip",
+        "install",
+        "--no-cache-dir",
+        "--quiet",
+        "/Users/dshanklinbv/repos-eidos-agi/cept/dist/cept-0.4.1-py3-none-any.whl",
+        "&&",
+        "/var/folders/x_/j3nb_xdn5pq2845d4xsd_rn80000gn/T/eidos-ship-wheel-t9k84hqw/bin/python",
+        "-c",
+        "<metadata/runtime version check>"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "metadata=0.4.1 runtime=0.4.1",
+      "stderr_tail": "[notice] A new release of pip is available: 24.2 -> 26.1.1\n[notice] To update, run: /var/folders/x_/j3nb_xdn5pq2845d4xsd_rn80000gn/T/eidos-ship-wheel-t9k84hqw/bin/python -m pip install --upgrade pip",
+      "duration_seconds": 5.14,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "entrypoint-cept-help",
+      "facet": "cli",
+      "status": "pass",
+      "ok": true,
+      "detail": "cept --help responds.",
+      "command": [
+        "cept",
+        "--help"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "duration_seconds": 0.717,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "entrypoint-cept-cli-help",
+      "facet": "cli",
+      "status": "pass",
+      "ok": true,
+      "detail": "cept-cli --help responds.",
+      "command": [
+        "cept-cli",
+        "--help"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "                 packet. Soft cap 4 words; hard cap 6 (truncated).\n                        Example: \"audit research README\".\n  --cwd CWD             Working directory (default: current).\n  --lookback LOOKBACK   Lookback minutes (default: CEPT_LOOKBACK_MINUTES from\n                        .ceptkey, else 20).\n  --max-events MAX_EVENTS\n  --mode {steer,debug,research,architecture}\n  --session-id SESSION_ID\n  --transcript PATH     Read an explicit agent transcript JSONL file instead\n                        of auto-locating Claude Code.\n  --transcript-source {auto,claude-code,file}\n                        Transcript adapter to use. Default auto uses\n                        --transcript when present, otherwise Claude Code.\n  --cept-id CEPT_ID     Two-way session verification nonce. When set, cept\n                        finds the JSONL whose recent tool_use input carries\n                        this id (and errors otherwise). Mostly relevant when\n                        called via MCP.\n  --question QUESTION\n  --file PATH           Source file to include in the packet so the model can\n                        quote and critique specific lines. Repeatable. Caps:\n                        50 KB/file, 256 KB total, 24 files max.\n  --no-repo-state\n  --no-diff\n  --dry-run             Print packet, skip OpenRouter call.\n  --model MODEL         OpenRouter model id (default: CEPT_DEFAULT_MODEL from\n                        .ceptkey, else perplexity/sonar-pro).\n  --provider {auto,openrouter}\n                        Model provider. This build supports OpenRouter only;\n                        default auto resolves to OpenRouter.\n  --emit SPEC           Adapter for progress events. Repeatable. Specs:\n                        stdout, stderr, jsonl:-, jsonl:PATH, file:PATH,\n                        socket:PATH, subprocess:CMD, hud, notify, noop.\n                        Default: stderr.\n  --quiet               Disable all event emission.\n  --self-assess         Dogfood cept against cept's own core files. Provides\n                        goal, headline, architecture mode, and files unless\n                        overridden.\n  --guide [{ceptkey}]   Print a built-in guide and exit. Defaults to 'ceptkey'\n                        for .ceptkey setup and troubleshooting.\n  --guide-path          With --guide, print the source path when available\n                        instead of guide contents.",
+      "stderr_tail": "",
+      "duration_seconds": 0.23,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "entrypoint-cept-hud-install-help",
+      "facet": "cli",
+      "status": "pass",
+      "ok": true,
+      "detail": "cept-hud-install --help responds.",
+      "command": [
+        "cept-hud-install",
+        "--help"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "usage: cept-hud-install [-h] [--force] [--path]\n\nBuild and cache the cept-hud Swift binary.\n\noptions:\n  -h, --help  show this help message and exit\n  --force     Rebuild even if a cached binary already exists.\n  --path      Print the resolved binary path and exit.",
+      "stderr_tail": "",
+      "duration_seconds": 0.079,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "entrypoint-cept-keyfile-help",
+      "facet": "cli",
+      "status": "pass",
+      "ok": true,
+      "detail": "cept-keyfile --help responds.",
+      "command": [
+        "cept-keyfile",
+        "--help"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "usage: cept-keyfile [-h] {init,show,where,guide} ...\n\ncept-keyfile \u2014 scaffold and inspect ceptkey files. Subcommands: init Write a\nnew .ceptkey with auto-populated provenance metadata. show Print metadata of\nthe nearest .ceptkey (no values \u2014 safe to share). where Print the path of the\nnearest .ceptkey. guide Print the .ceptkey setup and troubleshooting guide.\n\npositional arguments:\n  {init,show,where,guide}\n    init                Create a new .ceptkey with metadata.\n    show                Show nearest .ceptkey metadata (no values).\n    where               Print path of nearest .ceptkey.\n    guide               Print the .ceptkey guide.\n\noptions:\n  -h, --help            show this help message and exit",
+      "stderr_tail": "",
+      "duration_seconds": 0.123,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "codex-plugin-validator",
+      "facet": "codex-plugin",
+      "status": "pass",
+      "ok": true,
+      "detail": "Codex plugin manifest validated.",
+      "command": [
+        "python3",
+        "/Users/dshanklinbv/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py",
+        "/Users/dshanklinbv/repos-eidos-agi/cept"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "Plugin validation passed: /Users/dshanklinbv/repos-eidos-agi/cept",
+      "stderr_tail": "",
+      "duration_seconds": 0.154,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "felix-plugin-doctor",
+      "facet": "plugin",
+      "status": "pass",
+      "ok": true,
+      "detail": "Felix plugin doctor passed.",
+      "command": [
+        "felix",
+        "plugin",
+        "doctor",
+        "/Users/dshanklinbv/repos-eidos-agi/cept"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "Felix plugin doctor: cept\nsource: /Users/dshanklinbv/repos-eidos-agi/cept\nverdict: PASS\n\nChecks:\n- manifest: PASS \u2014 distribution metadata is present\n- runtime: PASS \u2014 MCP tools: cept\n- agent-discovery: PASS \u2014 skill tool references match MCP tools\n\nMCP tools:\n- cept\n\nSkill tool references:\n- none\n\nBlockers:\n- none\n\nWarnings:\n- none",
+      "stderr_tail": "",
+      "duration_seconds": 1.362,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "marketplace-check",
+      "facet": "marketplace",
+      "status": "pass",
+      "ok": true,
+      "detail": "Marketplace bundle matches source.",
+      "command": [
+        "python3",
+        "/Users/dshanklinbv/repos-eidos-agi/eidos-marketplace/tools/marketplace_publish.py",
+        "check",
+        "cept",
+        "--source",
+        "/Users/dshanklinbv/repos-eidos-agi/cept"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/eidos-marketplace",
+      "exit_code": 0,
+      "stdout_tail": "cept: OK",
+      "stderr_tail": "",
+      "duration_seconds": 0.18,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "eidos-plugin-show",
+      "facet": "eidos-plugin",
+      "status": "pass",
+      "ok": true,
+      "detail": "Installed Eidos plugin is visible.",
+      "command": [
+        "eidos",
+        "plugin",
+        "show",
+        "cept"
+      ],
+      "cwd": "/var/folders/x_/j3nb_xdn5pq2845d4xsd_rn80000gn/T",
+      "exit_code": 0,
+      "stdout_tail": "eview of its recent agent trajectory. The plugin routes to\n  the CLI-first proprioception layer: dry-run sensitive packets, inspect the\n  nearest keyfile metadata, and call `cept-cli` or the bounded MCP server with\n  OpenRouter-backed Perplexity grounding only when the transcript packet is\n  appropriate to send.\n\nwhen_to_fire:\n  - \"the user explicitly says to use Cept\"\n  - \"the user explicitly says to use cept\"\n  - \"a coding agent is stuck, looping, or retrying the same fix\"\n  - \"debugging needs ranked likely causes from recent transcript evidence\"\n  - \"architecture or research work needs outside-in steering\"\n  - \"the agent should inspect its own trajectory before continuing\"\n\nowner_forge: research\n\nrequired_evidence:\n  - \"evidence/cept-dry-run-summary.md\"\n  - \"evidence/cept-guidance.json\"\n  - \"evidence/cept-reconciliation.md\"\n\n--- playbook.md (head) ---\n# Cept\n\n## Goal\n\nUse Cept as a deliberate proprioception pause for coding agents. The goal is to\nreview the agent's recent trajectory, surface blind spots, and return a concrete\nnext step without leaking secrets or treating outside guidance as a verdict.\nIn plain terms, Cept helps the AI inspect its own recent work, uncertainty, and\nnext move before it continues.\n\n## Inputs\n\n- `args.goal` \u2014 what the agent is trying to accomplish.\n- `args.headline` \u2014 a short 3-4 word summary for the cept packet and HUD.\n- `args.mode` \u2014 optional `steer`, `debug`, `research`, or `architecture`.\n- `args.provider` \u2014 optional `auto` or `openrouter`; both route grounded\n  Perplexity models through OpenRouter in this build.\n- `args.transcript` \u2014 optional JSONL transcript path for non-Claude agents or\n  deterministic replay.\n- `args.files` \u2014 optional files to include for content-specific critique.\n\n## Procedure\n\n1. Start with local setup and metadata checks:\n\n   ```bash\n   cept-keyfile show\n   cept-cli --help\n   /Users/dshanklinbv/plugins/cept/scripts/cept-registry doctor\n   ```\n\n   For live calls, the environment or nearest `.ceptkey` must provide\n   `OPENROUTER_API_KEY`. Native `PERPLEXITY_API_KEY` routing is intentionally\n   not part of this pass because cept gets Perplexity grounding via OpenRouter\n   model slugs such as `perplexity/sonar-pro`.\n   See `docs/CEPTKEY.md` for lookup rules, supported keys, examples, and\n   troubleshooting.\n\n   If the caller is not Claude Code, provide an explicit transcript file:\n\n... (65 more lines)",
+      "stderr_tail": "",
+      "duration_seconds": 0.611,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "eidos-plugin-run",
+      "facet": "eidos-plugin",
+      "status": "pass",
+      "ok": true,
+      "detail": "Installed Eidos plugin run path responds.",
+      "command": [
+        "eidos",
+        "plugin",
+        "run",
+        "cept",
+        "--json"
+      ],
+      "cwd": "/var/folders/x_/j3nb_xdn5pq2845d4xsd_rn80000gn/T",
+      "exit_code": 0,
+      "stdout_tail": "{\"ok\": true, \"plugin\": {\"slug\": \"cept\", \"scope\": \"global\", \"version\": \"0.4.1\"}, \"invocation_id\": \"cept-1779616435774\", \"work_dir\": \"/Users/dshanklinbv/.eidos/plugin_runs/cept-1779616435774\", \"context_json\": \"/Users/dshanklinbv/.eidos/plugin_runs/cept-1779616435774/context.json\", \"playbook_path\": \"/Users/dshanklinbv/.eidos/plugin_runs/cept-1779616435774/playbook.md\", \"draft_dir\": \"/Users/dshanklinbv/.eidos/plugin_runs/cept-1779616435774/draft\"}",
+      "stderr_tail": "",
+      "duration_seconds": 0.633,
+      "artifacts": [],
+      "data": {
+        "work_dir": "/Users/dshanklinbv/.eidos/plugin_runs/cept-1779616435774",
+        "work_dir_cleaned": true
+      }
+    },
+    {
+      "id": "cept-guide",
+      "facet": "cli",
+      "status": "pass",
+      "ok": true,
+      "detail": "cept-cli --guide prints the .ceptkey guide.",
+      "command": [
+        "bash",
+        "--noprofile",
+        "--norc",
+        "-lc",
+        "cept-cli --guide | grep -q '# ceptkey guide'"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "duration_seconds": 0.239,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "cept-registry-doctor",
+      "facet": "registry",
+      "status": "pass",
+      "ok": true,
+      "detail": "Cept registry doctor passed from source.",
+      "command": [
+        "bash",
+        "--noprofile",
+        "--norc",
+        "-lc",
+        "scripts/cept-registry doctor"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "Cept registry doctor\n- ok: source-exists - /Users/dshanklinbv/repos-eidos-agi/cept\n- ok: canonical-source-exists - /Users/dshanklinbv/repos-eidos-agi/cept\n- ok: plugin-shim - /Users/dshanklinbv/plugins/cept -> /Users/dshanklinbv/repos-eidos-agi/cept\n- ok: ceptkey-guide - docs/CEPTKEY.md\n- ok: eidos-playbook - eidos-plugin/cept/playbook.md\n- ok: registry - registry/storage.toml\n- ok: cept-cli - cept-cli --help\n- ok: guide-flag - cept-cli exposes --guide\n- ok: self-assess-flag - cept-cli exposes --self-assess",
+      "stderr_tail": "",
+      "duration_seconds": 0.395,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "generic-transcript-dry-run",
+      "facet": "transcript-adapter",
+      "status": "pass",
+      "ok": true,
+      "detail": "Cept self-assess dry-run accepts a generic JSONL transcript.",
+      "command": [
+        "bash",
+        "--noprofile",
+        "--norc",
+        "-lc",
+        "tmp=$(mktemp /tmp/cept-agent.XXXXXX.jsonl); printf '%s\\n' '{\"timestamp\":\"2026-05-24T12:00:00+00:00\",\"role\":\"user\",\"text\":\"Need shipment proof.\",\"cwd\":\"/Users/dshanklinbv/repos-eidos-agi/cept\"}' '{\"timestamp\":\"2026-05-24T12:01:00+00:00\",\"type\":\"tool_call\",\"tool\":\"shell\",\"input\":\"pytest\"}' '{\"timestamp\":\"2026-05-24T12:02:00+00:00\",\"type\":\"tool_result\",\"content\":\"113 passed\"}' > \"$tmp\"; cept-cli --self-assess --dry-run --quiet --no-repo-state --no-diff --transcript \"$tmp\" --transcript-source file >/tmp/cept-ship-dry-run.json; rc=$?; rm -f \"$tmp\"; exit $rc"
+      ],
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "duration_seconds": 0.244,
+      "artifacts": [],
+      "data": {}
+    },
+    {
+      "id": "post-clean-artifact-scan",
+      "facet": "workspace",
+      "status": "pass",
+      "ok": true,
+      "detail": "No generated build/cache artifacts found in the checkout.",
+      "command": null,
+      "cwd": "/Users/dshanklinbv/repos-eidos-agi/cept",
+      "exit_code": null,
+      "stdout_tail": "",
+      "stderr_tail": "",
+      "duration_seconds": null,
+      "artifacts": [],
+      "data": {}
+    }
+  ]
+}
