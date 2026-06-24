@@ -23,3 +23,8 @@ required_evidence:
   - "evidence/cept-dry-run-summary.md"
   - "evidence/cept-guidance.json"
   - "evidence/cept-reconciliation.md"
+
+faculty:
+  role: outside-in agent proprioception faculty
+  invoke_as: cept
+  handoff: review the agent trajectory, surface blind spots, and return the next evidence-backed move
